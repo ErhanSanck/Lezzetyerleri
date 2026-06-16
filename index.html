@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lezzet Rehberi - Bölgenin En İyi Restoranları</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="#/" class="logo" onclick="navigate('/')">🍽️ Lezzet Rehberi</a>
+    <div class="search-box">
+      <span class="icon" id="searchIcon" style="cursor:pointer;">🔎</span>
+      <input id="searchInput" type="text" placeholder="Lokanta, mahalle veya ürün ara...">
+      <div id="searchResults" class="search-results"></div>
+    </div>
+  </div>
+</header>
+
+<main class="container" id="app"></main>
+
+<footer>Lezzet Rehberi — Bölgenizdeki en iyi lokantalar bir arada. · 
+
+<script type="module" src="data.js"></script>
+<script type="module">
+const app = document.getElementById('app');
+
+// Global navigasyonu modül dışına açıyoruz
+window.navigate = function(hash) {
+  window.location.hash = hash;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+function formatPrice(n) {
+  return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 0 }) + ' ₺';
+}
+
+/* ----------------------- Sayfa: Ana kategori listesi ----------------------- */
+async function renderHome() {
+  app.innerHTML = `<div class="empty-state">Yükleniyor...</div>`;
+  const categories = await RestoranDB.getCategories();
+
+  app.innerHTML = `
+    <h1 class="page-title">Bölgedeki En İyi Restoranlar</h1>
+    <p class="page-subtitle">Bir kategori seçerek lokantaları ve menü fiyatlarını inceleyin.</p>
+    <div class="category-grid">
+      ${categories.map(cat => `
+        <div class="category-card" onclick="navigate('#/kategori/${cat.slug}')">
+          <span class="emoji">${cat.emoji}</span>
+          <div class="name">${escapeHtml(cat.name)}</div>
+          <div class="count">${cat.restaurantCount} lokanta</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+/* ----------------------- Sayfa: Kategori ----------------------- */
+async function renderCategory(slug, subSlug) {
+  app.innerHTML = `<div class="empty-state">Yükleniyor...</div>`;
+  const category = await RestoranDB.getCategoryBySlug(slug);
+
+  if (!category) {
+    app.innerHTML = `<div class="empty-state"><span class="emoji">🤔</span>Kategori bulunamadı.</div>`;
+    return;
+  }
+
+  const restaurants = await RestoranDB.getRestaurants({
+    categorySlug: slug,
+    subcategorySlug: subSlug || null
+  });
+
+  const activeSub = subSlug ? category.subcategories.find(s => s.slug === subSlug) : null;
+
+  app.innerHTML = `
+    <div class="breadcrumb"><a href="#/" onclick="navigate('#/')">Ana Sayfa</a> / ${escapeHtml(category.name)}</div>
+    <h1 class="page-title">${category.emoji} ${escapeHtml(category.name)}</h1>
+    <p class="page-subtitle">${activeSub ? escapeHtml(activeSub.name) + ' seçildi' : 'Tüm lokantalar listeleniyor'}</p>
+
+    ${category.subcategories.length ? `
+      <div class="subcat-row">
+        <div class="subcat-chip ${!subSlug ? 'active' : ''}" onclick="navigate('#/kategori/${slug}')">Tümü</div>
+        ${category.subcategories.map(sub => `
+          <div class="subcat-chip ${subSlug === sub.slug ? 'active' : ''}"
+               onclick="navigate('#/kategori/${slug}/alt/${sub.slug}')">
+            ${sub.emoji} ${escapeHtml(sub.name)}
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${renderRestaurantGrid(restaurants)}
+  `;
+}
+
+function renderRestaurantGrid(restaurants) {
+  if (!restaurants.length) {
+    return `<div class="empty-state"><span class="emoji">🍽️</span>Bu kategoride henüz lokanta eklenmemiş.</div>`;
+  }
+
+  return `
+    <div class="restaurant-grid">
+      ${restaurants.map(r => `
+        <div class="restaurant-card" onclick="navigate('#/restoran/${r.id}')">
+          <div class="thumb">
+            ${r.image ? `<img src="${r.image}" alt="${escapeHtml(r.name)}">` : (r.category ? r.category.emoji : '🍽️')}
+          </div>
+          <div class="body">
+            <div class="name">${escapeHtml(r.name)}</div>
+            <div class="address">📍 ${escapeHtml(r.address || 'Adres belirtilmemiş')}</div>
+            ${r.subcategory ? `<span class="tag">${escapeHtml(r.subcategory.name)}</span>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+/* ----------------------- Sayfa: Restoran detay ----------------------- */
+async function renderRestaurantDetail(id) {
+  app.innerHTML = `<div class="empty-state">Yükleniyor...</div>`;
+  const r = await RestoranDB.getRestaurantById(id);
+
+  if (!r) {
+    app.innerHTML = `<div class="empty-state"><span class="emoji">🤔</span>Lokanta bulunamadı.</div>`;
+    return;
+  }
+
+  const backHash = r.category ? `#/kategori/${r.category.slug}` : '#/';
+
+  app.innerHTML = `
+    <div class="breadcrumb">
+      <a href="#/" onclick="navigate('#/')">Ana Sayfa</a> /
+      <a href="${backHash}" onclick="navigate('${backHash}')">${r.category ? escapeHtml(r.category.name) : ''}</a> /
+      ${escapeHtml(r.name)}
+    </div>
+
+    <div class="detail-header">
+      <div class="detail-thumb">
+        ${r.image ? `<img src="${r.image}" alt="${escapeHtml(r.name)}">` : (r.category ? r.category.emoji : '🍽️')}
+      </div>
+      <div class="detail-info">
+        <div class="name">${escapeHtml(r.name)}</div>
+        <div class="address">📍 ${escapeHtml(r.address || 'Adres belirtilmemiş')}</div>
+        ${r.phone ? `<div class="phone">📞 ${escapeHtml(r.phone)}</div>` : ''}
+        ${r.description ? `<div class="description">${escapeHtml(r.description)}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <h2>Menü</h2>
+      ${r.menuItems.length ? `
+        <table class="menu-table">
+          <thead><tr><th>Ürün</th><th style="text-align:right">Fiyat</th></tr></thead>
+          <tbody>
+            ${r.menuItems.map(m => `
+              <tr><td>${escapeHtml(m.name)}</td><td class="price">${formatPrice(m.price)}</td></tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : `<p class="page-subtitle">Menü bilgisi henüz eklenmemiş.</p>`}
+    </div>
+  `;
+}
+
+/* ----------------------- Sayfa: Arama sonuçları ----------------------- */
+async function renderSearchPage(query) {
+  const decoded = decodeURIComponent(query || '');
+  const results = await RestoranDB.getRestaurants({ query: decoded });
+
+  app.innerHTML = `
+    <div class="breadcrumb"><a href="#/" onclick="navigate('#/')">Ana Sayfa</a> / Arama sonuçları</div>
+    <h1 class="page-title">"${escapeHtml(decoded)}" için arama sonuçları</h1>
+    <p class="page-subtitle">${results.length} lokanta bulundu</p>
+    ${renderRestaurantGrid(results)}
+  `;
+}
+
+/* ----------------------- Arama motoru tetikleyicileri ----------------------- */
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+async function renderSearchResults(query) {
+  if (!query.trim()) {
+    searchResults.classList.remove('show');
+    searchResults.innerHTML = '';
+    return;
+  }
+
+  const allResults = await RestoranDB.getRestaurants({ query });
+  const results = allResults.slice(0, 8);
+
+  if (!results.length) {
+    searchResults.innerHTML = `<div class="search-empty">"${escapeHtml(query)}" için sonuç bulunamadı.</div>`;
+  } else {
+    searchResults.innerHTML = results.map(r => `
+      <div class="search-result-item" onclick="selectSearchResult('${r.id}')">
+        <div class="name">${escapeHtml(r.name)}</div>
+        <div class="meta">${r.category ? escapeHtml(r.category.name) : ''} · ${escapeHtml(r.address || '')}</div>
+      </div>
+    `).join('');
+  }
+  searchResults.classList.add('show');
+}
+
+window.selectSearchResult = function(id) {
+  searchInput.value = '';
+  searchResults.classList.remove('show');
+  navigate(`#/restoran/${id}`);
+}
+
+function submitSearch() {
+  const value = searchInput.value.trim();
+  if (!value) return;
+  searchResults.classList.remove('show');
+  navigate(`#/arama/${encodeURIComponent(value)}`);
+}
+
+searchInput.addEventListener('input', (e) => renderSearchResults(e.target.value));
+searchInput.addEventListener('focus', (e) => { if (e.target.value.trim()) renderSearchResults(e.target.value); });
+searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitSearch(); });
+document.getElementById('searchIcon').addEventListener('click', submitSearch);
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-box')) searchResults.classList.remove('show');
+});
+
+/* ----------------------- Router ----------------------- */
+function router() {
+  const hash = window.location.hash || '#/';
+  const parts = hash.replace(/^#\//, '').split('/').filter(Boolean);
+
+  if (parts.length === 0) {
+    renderHome();
+  } else if (parts[0] === 'kategori' && parts[1]) {
+    if (parts[2] === 'alt' && parts[3]) {
+      renderCategory(parts[1], parts[3]);
+    } else {
+      renderCategory(parts[1]);
+    }
+  } else if (parts[0] === 'restoran' && parts[1]) {
+    renderRestaurantDetail(parts[1]);
+  } else if (parts[0] === 'arama' && parts[1]) {
+    renderSearchPage(parts[1]);
+    searchInput.value = decodeURIComponent(parts[1]);
+  } else {
+    renderHome();
+  }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener('hashchange', router);
+window.addEventListener('DOMContentLoaded', router);
+router();
+</script>
+</body>
+</html>

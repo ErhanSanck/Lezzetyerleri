@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Paneli - Lezzet Rehberi</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .loading-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center; z-index:9999; font-weight:bold; font-size:18px; visibility:hidden; opacity:0; transition:0.2s; }
+  .loading-overlay.show { visibility:visible; opacity:1; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <h2 id="confirmTitle">Onay</h2>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeConfirm()">Vazgeç</button>
+      <button class="btn danger" id="confirmActionBtn">Sil</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="globalLoader">⏳ İşlem yapılıyor, lütfen bekleyin...</div>
+
+<script type="module" src="data.js"></script>
+<script>
+  // Tarayıcı modülün yüklenmesini beklesin
+  window.addEventListener('load', () => {
+    // Şimdi RestoranAuth artık window üzerinden erişilebilir
+    if (typeof RestoranAuth !== 'undefined') {
+      if (RestoranAuth.isLoggedIn()) {
+        renderAdmin();
+      } else {
+        renderLogin();
+      }
+    } else {
+      console.error("RestoranAuth yüklenemedi! Dosya yolunu kontrol et.");
+    }
+  });
+</script>
+
+<script>
+const root = document.getElementById('root');
+let currentTab = 'restaurants';
+let editingRestaurantId = null;
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+function showLoader() { document.getElementById('globalLoader').classList.add('show'); }
+function hideLoader() { document.getElementById('globalLoader').classList.remove('show'); }
+
+/* ----------------------- Onay Modalı ----------------------- */
+function openConfirm(title, message, onConfirm) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.onclick = async () => { 
+    closeConfirm();
+    showLoader();
+    await onConfirm(); 
+    hideLoader();
+  };
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('show');
+}
+
+/* ----------------------- Giriş Ekranı ----------------------- */
+function renderLogin() {
+  root.innerHTML = `
+    <div class="login-box">
+      <h1>🍽️ Admin Girişi</h1>
+      <div id="loginError"></div>
+      <div class="form-group">
+        <label>Kullanıcı Adı</label>
+        <input type="text" id="loginUser" placeholder="admin">
+      </div>
+      <div class="form-group">
+        <label>Şifre</label>
+        <input type="password" id="loginPass" placeholder="••••••••">
+      </div>
+      <button class="btn" style="width:100%" onclick="handleLogin()">Giriş Yap</button>
+    </div>
+  `;
+}
+
+function handleLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+
+  if (RestoranAuth.login(user, pass)) {
+    renderAdmin();
+  } else {
+    document.getElementById('loginError').innerHTML = `<div class="error-msg">Kullanıcı adı veya şifre hatalı.</div>`;
+  }
+}
+
+function handleLogout() {
+  RestoranAuth.logout();
+  renderLogin();
+}
+
+/* ----------------------- Admin İskelet ----------------------- */
+function renderAdmin() {
+  root.innerHTML = `
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="logo">🍽️ Admin</div>
+        <nav>
+          <a class="${currentTab === 'restaurants' ? 'active' : ''}" onclick="switchTab('restaurants')"><span class="label">🍽️ Lokantalar</span></a>
+          <a class="${currentTab === 'categories' ? 'active' : ''}" onclick="switchTab('categories')"><span class="label">🗂️ Kategoriler</span></a>
+          <a onclick="handleLogout()"><span class="label">🚪 Çıkış Yap</span></a>
+        </nav>
+      </div>
+      <div class="admin-main" id="adminMain">Yükleniyor...</div>
+    </div>
+  `;
+  renderTabContent();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  renderAdmin();
+}
+
+async function renderTabContent() {
+  showLoader();
+  if (currentTab === 'restaurants') await renderRestaurantsTab();
+  else await renderCategoriesTab();
+  hideLoader();
+}
+
+/* ----------------------- Tab: Lokantalar ----------------------- */
+async function renderRestaurantsTab() {
+  const restaurants = await RestoranDB.getRestaurants();
+  const main = document.getElementById('adminMain');
+
+  main.innerHTML = `
+    <div class="admin-toolbar">
+      <h1>Lokantalar (${restaurants.length})</h1>
+      <button class="btn" onclick="openRestaurantForm()">+ Yeni Lokanta</button>
+    </div>
+    <div id="restaurantFormContainer"></div>
+    <table class="admin-table">
+      <thead><tr><th>İsim</th><th>Kategori</th><th>Adres</th><th>Menü</th><th></th></tr></thead>
+      <tbody>
+        ${restaurants.map(r => `
+          <tr>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${r.category ? escapeHtml(r.category.name) : '-'}${r.subcategory ? ' / ' + escapeHtml(r.subcategory.name) : ''}</td>
+            <td>${escapeHtml(r.address || '-')}</td>
+            <td>${(r.menuItems || []).length} ürün</td>
+            <td style="white-space:nowrap">
+              <button class="btn small secondary" onclick="openRestaurantForm('${r.id}')">Düzenle</button>
+              <button class="btn small danger" onclick="confirmDeleteRestaurant('${r.id}', '${escapeHtml(r.name)}')">Sil</button>
+            </td>
+          </tr>
+        `).join('') || `<tr><td colspan="5" style="text-align:center;padding:20px;">Henüz lokanta eklenmemiş.</td></tr>`}
+      </tbody>
+    </table>
+  `;
+}
+
+function confirmDeleteRestaurant(id, name) {
+  openConfirm('Lokantayı sil', `"${name}" silinecek.`, async () => {
+    await RestoranDB.deleteRestaurant(id);
+    await renderRestaurantsTab();
+  });
+}
+
+let formMenuItems = [];
+let formCategories = [];
+let _pendingImageData = undefined;
+
+async function openRestaurantForm(id) {
+  showLoader();
+  editingRestaurantId = id || null;
+  const restaurant = id ? await RestoranDB.getRestaurantById(id) : null;
+  formCategories = await RestoranDB.getCategories();
+  hideLoader();
+
+  formMenuItems = restaurant && restaurant.menuItems ? restaurant.menuItems.map(m => ({ ...m })) : [];
+  _pendingImageData = undefined;
+
+  document.getElementById('restaurantFormContainer').innerHTML = `
+    <div class="card">
+      <h2>${restaurant ? 'Lokantayı Düzenle' : 'Yeni Lokanta Ekle'}</h2>
+      <div class="form-row">
+        <div class="form-group"><label>Adı *</label><input id="f_name" type="text" value="${restaurant ? escapeHtml(restaurant.name) : ''}"></div>
+        <div class="form-group"><label>Telefon</label><input id="f_phone" type="text" value="${restaurant ? escapeHtml(restaurant.phone || '') : ''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kategori *</label>
+          <select id="f_category" onchange="onFormCategoryChange()">
+            <option value="">Seçiniz</option>
+            ${formCategories.map(c => `<option value="${c.id}" ${restaurant && restaurant.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>Alt Kategori</label><select id="f_subcategory"></select></div>
+      </div>
+      <div class="form-group"><label>Adres</label><input id="f_address" type="text" value="${restaurant ? escapeHtml(restaurant.address || '') : ''}"></div>
+      <div class="form-group"><label>Açıklama</label><textarea id="f_description" rows="2">${restaurant ? escapeHtml(restaurant.description || '') : ''}</textarea></div>
+      <div class="form-group">
+        <label>Fotoğraf</label>
+        <input id="f_image" type="file" accept="image/*" onchange="onImageSelected(this)">
+        <div id="imagePreview" style="margin-top:8px;">${restaurant && restaurant.image ? `<img src="${restaurant.image}" style="height:80px;border-radius:8px;">` : ''}</div>
+      </div>
+      <div class="form-group">
+        <label>Menü Öğeleri</label>
+        <div id="menuItemsContainer"></div>
+        <button class="btn small secondary" onclick="addMenuItemRow()">+ Ürün Ekle</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeRestaurantForm()">Vazgeç</button>
+        <button class="btn" onclick="submitRestaurantForm()">${restaurant ? 'Güncelle' : 'Kaydet'}</button>
+      </div>
+    </div>
+  `;
+
+  onFormCategoryChange(restaurant ? restaurant.subcategoryId : null);
+  renderMenuItemRows();
+}
+
+function onImageSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _pendingImageData = e.target.result;
+    document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" style="height:80px;border-radius:8px;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function onFormCategoryChange(preselectSubId) {
+  const categoryId = document.getElementById('f_category').value;
+  const category = formCategories.find(c => c.id === categoryId);
+  const subSelect = document.getElementById('f_subcategory');
+
+  if (!category || !category.subcategories.length) {
+    subSelect.innerHTML = `<option value="">Yok</option>`;
+    return;
+  }
+
+  subSelect.innerHTML = `<option value="">Seçilmedi</option>` +
+    category.subcategories.map(s => `<option value="${s.id}" ${preselectSubId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
+}
+
+function renderMenuItemRows() {
+  document.getElementById('menuItemsContainer').innerHTML = formMenuItems.map((item, idx) => `
+    <div class="menu-item-row">
+      <input type="text" placeholder="Ürün adı" value="${escapeHtml(item.name)}" oninput="formMenuItems[${idx}].name = this.value">
+      <input type="number" class="price-input" placeholder="Fiyat ₺" value="${item.price}" oninput="formMenuItems[${idx}].price = this.value">
+      <button class="btn small danger" onclick="removeMenuItemRow(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addMenuItemRow() { formMenuItems.push({ name: '', price: '' }); renderMenuItemRows(); }
+function removeMenuItemRow(idx) { formMenuItems.splice(idx, 1); renderMenuItemRows(); }
+function closeRestaurantForm() { document.getElementById('restaurantFormContainer').innerHTML = ''; }
+
+async function submitRestaurantForm() {
+  const name = document.getElementById('f_name').value.trim();
+  const categoryId = document.getElementById('f_category').value;
+
+  if (!name || !categoryId) { alert('İsim ve kategori zorunludur.'); return; }
+
+  showLoader();
+  const validMenuItems = formMenuItems.filter(m => m.name.trim() && m.price !== '').map(m => ({ id: m.id, name: m.name.trim(), price: Number(m.price) }));
+
+  const payload = {
+    name, categoryId,
+    subcategoryId: document.getElementById('f_subcategory').value || null,
+    address: document.getElementById('f_address').value.trim(),
+    phone: document.getElementById('f_phone').value.trim(),
+    description: document.getElementById('f_description').value.trim(),
+    menuItems: validMenuItems
+  };
+
+  if (_pendingImageData !== undefined) payload.image = _pendingImageData;
+
+  if (editingRestaurantId) await RestoranDB.updateRestaurant(editingRestaurantId, payload);
+  else await RestoranDB.addRestaurant(payload);
+
+  closeRestaurantForm();
+  await renderRestaurantsTab();
+  hideLoader();
+}
+
+/* ----------------------- Tab: Kategoriler ----------------------- */
+async function renderCategoriesTab() {
+  const categories = await RestoranDB.getCategories();
+  const main = document.getElementById('adminMain');
+
+  main.innerHTML = `
+    <div class="admin-toolbar"><h1>Kategoriler</h1></div>
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group"><input id="newCategoryName" type="text" placeholder="Yeni Kategori Adı"></div>
+        <div class="form-group" style="flex:0 0 auto;"><button class="btn" onclick="handleAddCategory()">+ Ekle</button></div>
+      </div>
+    </div>
+    ${categories.map(cat => `
+      <div class="card">
+        <div class="admin-toolbar">
+          <h2>${cat.emoji} ${escapeHtml(cat.name)} <span class="badge">${cat.restaurantCount} lokanta</span></h2>
+          <button class="btn small danger" onclick="confirmDeleteCategory('${cat.id}', '${escapeHtml(cat.name)}')">Kategoriyi Sil</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Alt Kategori</th><th></th></tr></thead>
+          <tbody>
+            ${cat.subcategories.map(sub => `
+              <tr>
+                <td>${sub.emoji} ${escapeHtml(sub.name)}</td>
+                <td><button class="btn small danger" onclick="confirmDeleteSubcategory('${sub.id}', '${escapeHtml(sub.name)}')">Sil</button></td>
+              </tr>
+            `).join('') || `<tr><td colspan="2">Alt kategori yok.</td></tr>`}
+          </tbody>
+        </table>
+        <div class="form-row" style="margin-top:12px;">
+          <div class="form-group"><input type="text" id="newSub_${cat.id}" placeholder="Alt kategori adı"></div>
+          <div class="form-group" style="flex:0 0 auto;"><button class="btn small secondary" onclick="handleAddSubcategory('${cat.id}')">+ Alt Kategori Ekle</button></div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+async function handleAddCategory() {
+  const name = document.getElementById('newCategoryName').value.trim();
+  if (!name) return;
+  showLoader();
+  await RestoranDB.addCategory(name);
+  await renderCategoriesTab();
+  hideLoader();
+}
+
+function confirmDeleteCategory(id, name) {
+  openConfirm('Kategoriyi sil', `"${name}" ve içindeki her şey silinecek.`, async () => {
+    await RestoranDB.deleteCategory(id);
+    await renderCategoriesTab();
+  });
+}
+
+async function handleAddSubcategory(categoryId) {
+  const name = document.getElementById(`newSub_${categoryId}`).value.trim();
+  if (!name) return;
+  showLoader();
+  await RestoranDB.addSubcategory(categoryId, name);
+  await renderCategoriesTab();
+  hideLoader();
+}
+
+function confirmDeleteSubcategory(id, name) {
+  openConfirm('Alt kategoriyi sil', `"${name}" silinecek.`, async () => {
+    await RestoranDB.deleteSubcategory(id);
+    await renderCategoriesTab();
+  });
+}
+
+/* ----------------------- Başlangıç ----------------------- */
+if (RestoranAuth.isLoggedIn()) renderAdmin();
+else renderLogin();
+</script>
+</body>
+</html>
