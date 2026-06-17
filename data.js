@@ -48,6 +48,12 @@ function uid() {
 
 /* ----------------------- Varsayılan Veri Kurulumu ----------------------- */
 async function buildDefaultData() {
+  const cities = {
+    'city-istanbul': { id: 'city-istanbul', name: 'İstanbul', slug: 'istanbul', emoji: '🌆' },
+    'city-ankara': { id: 'city-ankara', name: 'Ankara', slug: 'ankara', emoji: '🏛️' },
+    'city-izmir': { id: 'city-izmir', name: 'İzmir', slug: 'izmir', emoji: '🌊' }
+  };
+
   const categories = {
     'cat-kofteci': { id: 'cat-kofteci', name: 'Köfteciler', slug: 'koefteciler' },
     'cat-donerci': { id: 'cat-donerci', name: 'Dönerciler', slug: 'donerciler' },
@@ -63,7 +69,7 @@ async function buildDefaultData() {
   const r1_id = 'r1', r2_id = 'r2', r3_id = 'r3', r4_id = 'r4', r5_id = 'r5';
   const restaurants = {
     [r1_id]: {
-      id: r1_id, name: 'Hacı Köfteci', categoryId: 'cat-kofteci', subcategoryId: null,
+      id: r1_id, name: 'Hacı Köfteci', categoryId: 'cat-kofteci', subcategoryId: null, cityId: 'city-istanbul',
       address: 'Atatürk Cad. No:12, Merkez', phone: '0212 111 22 33',
       description: 'Geleneksel ızgara köfte, 1985\'ten beri aynı tarif.', image: null,
       menuItems: {
@@ -75,7 +81,7 @@ async function buildDefaultData() {
     // Diğer varsayılan veriler...
   };
 
-  const initialDB = { categories, subcategories, restaurants };
+  const initialDB = { cities, categories, subcategories, restaurants };
   await set(ref(db, '/'), initialDB);
   return initialDB;
 }
@@ -86,6 +92,7 @@ async function loadFullRawDB() {
   if (snapshot.exists()) {
     const data = snapshot.val();
     return {
+      cities: data.cities ? Object.values(data.cities) : [],
       categories: data.categories ? Object.values(data.categories) : [],
       subcategories: data.subcategories ? Object.values(data.subcategories) : [],
       restaurants: data.restaurants ? Object.values(data.restaurants).map(r => ({
@@ -96,6 +103,7 @@ async function loadFullRawDB() {
   } else {
     const initial = await buildDefaultData();
     return {
+      cities: Object.values(initial.cities),
       categories: Object.values(initial.categories),
       subcategories: Object.values(initial.subcategories),
       restaurants: Object.values(initial.restaurants).map(r => ({
@@ -108,6 +116,35 @@ async function loadFullRawDB() {
 
 /* ----------------------- Public API ----------------------- */
 const RestoranDB = {
+
+  async getCities() {
+    const rawData = await loadFullRawDB();
+    return rawData.cities.map(city => ({
+      ...city,
+      restaurantCount: rawData.restaurants.filter(r => r.cityId === city.id).length
+    })).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+  },
+
+  async getCityBySlug(slug) {
+    const cities = await this.getCities();
+    return cities.find(c => c.slug === slug) || null;
+  },
+
+  async addCity(name) {
+    const id = 'city-' + uid();
+    const city = { id, name, slug: slugify(name), emoji: '📍' };
+    await set(ref(db, `cities/${id}`), city);
+    return city;
+  },
+
+  async deleteCity(id) {
+    const rawData = await loadFullRawDB();
+    await remove(ref(db, `cities/${id}`));
+    
+    for (const r of rawData.restaurants.filter(r => r.cityId === id)) {
+      await remove(ref(db, `restaurants/${r.id}`));
+    }
+  },
 
   async getCategories() {
     const rawData = await loadFullRawDB();
@@ -161,10 +198,13 @@ const RestoranDB = {
     }
   },
 
-  async getRestaurants({ categorySlug, subcategorySlug, query } = {}) {
+  async getRestaurants({ citySlug, categorySlug, subcategorySlug, query } = {}) {
     const rawData = await loadFullRawDB();
     let list = rawData.restaurants.map(r => this._hydrate(r, rawData));
 
+    if (citySlug) {
+      list = list.filter(r => r.city && r.city.slug === citySlug);
+    }
     if (categorySlug) {
       list = list.filter(r => r.category && r.category.slug === categorySlug);
     }
@@ -176,6 +216,7 @@ const RestoranDB = {
       list = list.filter(r =>
         r.name.toLowerCase().includes(q) ||
         (r.address || '').toLowerCase().includes(q) ||
+        (r.city && r.city.name.toLowerCase().includes(q)) ||
         (r.category && r.category.name.toLowerCase().includes(q)) ||
         (r.subcategory && r.subcategory.name.toLowerCase().includes(q)) ||
         r.menuItems.some(m => m.name.toLowerCase().includes(q))
@@ -191,10 +232,12 @@ const RestoranDB = {
   },
 
   _hydrate(r, rawData) {
+    const city = rawData.cities.find(c => c.id === r.cityId);
     const cat = rawData.categories.find(c => c.id === r.categoryId);
     const sub = rawData.subcategories.find(s => s.id === r.subcategoryId);
     return {
       ...r,
+      city: city ? { ...city } : null,
       category: cat ? { ...cat, emoji: EMOJI_BY_CATEGORY[cat.slug] || '🍽️' } : null,
       subcategory: sub ? { ...sub, emoji: EMOJI_BY_SUBCATEGORY[sub.slug] || '🍽️' } : null
     };
@@ -213,6 +256,7 @@ const RestoranDB = {
     const restaurant = {
       id,
       name: data.name,
+      cityId: data.cityId,
       categoryId: data.categoryId,
       subcategoryId: data.subcategoryId || null,
       address: data.address || '',
@@ -235,6 +279,7 @@ const RestoranDB = {
 
     const updateData = {
       name: data.name,
+      cityId: data.cityId,
       categoryId: data.categoryId,
       subcategoryId: data.subcategoryId || null,
       address: data.address || '',
