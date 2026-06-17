@@ -6,7 +6,7 @@
 <title>Admin Paneli - Lezzet Rehberi</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .loading-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center; z-index:9999; font-weight:bold; font-size:18px; visibility:hidden; opacity:0; transition:0.2s; }
+  .loading-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center; z-index:9999; font-weight:bold; }
   .loading-overlay.show { visibility:visible; opacity:1; }
 </style>
 </head>
@@ -120,6 +120,7 @@ function renderAdmin() {
         <nav>
           <a class="${currentTab === 'restaurants' ? 'active' : ''}" onclick="switchTab('restaurants')"><span class="label">🍽️ Lokantalar</span></a>
           <a class="${currentTab === 'categories' ? 'active' : ''}" onclick="switchTab('categories')"><span class="label">🗂️ Kategoriler</span></a>
+          <a class="${currentTab === 'cities' ? 'active' : ''}" onclick="switchTab('cities')"><span class="label">🌆 Şehirler</span></a>
           <a onclick="handleLogout()"><span class="label">🚪 Çıkış Yap</span></a>
         </nav>
       </div>
@@ -137,13 +138,14 @@ function switchTab(tab) {
 async function renderTabContent() {
   showLoader();
   if (currentTab === 'restaurants') await renderRestaurantsTab();
-  else await renderCategoriesTab();
+  else if (currentTab === 'categories') await renderCategoriesTab();
+  else if (currentTab === 'cities') await renderCitiesTab();
   hideLoader();
 }
 
 /* ----------------------- Tab: Lokantalar ----------------------- */
 async function renderRestaurantsTab() {
-  const restaurants = await RestoranDB.getRestaurants();
+  const restaurants = await RestoranDB.getRestaurants({});
   const main = document.getElementById('adminMain');
 
   main.innerHTML = `
@@ -153,11 +155,12 @@ async function renderRestaurantsTab() {
     </div>
     <div id="restaurantFormContainer"></div>
     <table class="admin-table">
-      <thead><tr><th>İsim</th><th>Kategori</th><th>Adres</th><th>Menü</th><th></th></tr></thead>
+      <thead><tr><th>İsim</th><th>Şehir</th><th>Kategori</th><th>Adres</th><th>Menü</th><th></th></tr></thead>
       <tbody>
         ${restaurants.map(r => `
           <tr>
             <td>${escapeHtml(r.name)}</td>
+            <td>${r.city ? escapeHtml(r.city.name) : '-'}</td>
             <td>${r.category ? escapeHtml(r.category.name) : '-'}${r.subcategory ? ' / ' + escapeHtml(r.subcategory.name) : ''}</td>
             <td>${escapeHtml(r.address || '-')}</td>
             <td>${(r.menuItems || []).length} ürün</td>
@@ -166,7 +169,7 @@ async function renderRestaurantsTab() {
               <button class="btn small danger" onclick="confirmDeleteRestaurant('${r.id}', '${escapeHtml(r.name)}')">Sil</button>
             </td>
           </tr>
-        `).join('') || `<tr><td colspan="5" style="text-align:center;padding:20px;">Henüz lokanta eklenmemiş.</td></tr>`}
+        `).join('') || `<tr><td colspan="6" style="text-align:center;padding:20px;">Henüz lokanta eklenmemiş.</td></tr>`}
       </tbody>
     </table>
   `;
@@ -181,6 +184,7 @@ function confirmDeleteRestaurant(id, name) {
 
 let formMenuItems = [];
 let formCategories = [];
+let formCities = [];
 let _pendingImageData = undefined;
 
 async function openRestaurantForm(id) {
@@ -188,6 +192,7 @@ async function openRestaurantForm(id) {
   editingRestaurantId = id || null;
   const restaurant = id ? await RestoranDB.getRestaurantById(id) : null;
   formCategories = await RestoranDB.getCategories();
+  formCities = await RestoranDB.getCities();
   hideLoader();
 
   formMenuItems = restaurant && restaurant.menuItems ? restaurant.menuItems.map(m => ({ ...m })) : [];
@@ -197,7 +202,16 @@ async function openRestaurantForm(id) {
     <div class="card">
       <h2>${restaurant ? 'Lokantayı Düzenle' : 'Yeni Lokanta Ekle'}</h2>
       <div class="form-row">
+        <div class="form-group">
+          <label>Şehir *</label>
+          <select id="f_city">
+            <option value="">Seçiniz</option>
+            ${formCities.map(c => `<option value="${c.id}" ${restaurant && restaurant.cityId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+          </select>
+        </div>
         <div class="form-group"><label>Adı *</label><input id="f_name" type="text" value="${restaurant ? escapeHtml(restaurant.name) : ''}"></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Telefon</label><input id="f_phone" type="text" value="${restaurant ? escapeHtml(restaurant.phone || '') : ''}"></div>
       </div>
       <div class="form-row">
@@ -274,15 +288,16 @@ function closeRestaurantForm() { document.getElementById('restaurantFormContaine
 
 async function submitRestaurantForm() {
   const name = document.getElementById('f_name').value.trim();
+  const cityId = document.getElementById('f_city').value;
   const categoryId = document.getElementById('f_category').value;
 
-  if (!name || !categoryId) { alert('İsim ve kategori zorunludur.'); return; }
+  if (!name || !cityId || !categoryId) { alert('İsim, şehir ve kategori zorunludur.'); return; }
 
   showLoader();
   const validMenuItems = formMenuItems.filter(m => m.name.trim() && m.price !== '').map(m => ({ id: m.id, name: m.name.trim(), price: Number(m.price) }));
 
   const payload = {
-    name, categoryId,
+    name, cityId, categoryId,
     subcategoryId: document.getElementById('f_subcategory').value || null,
     address: document.getElementById('f_address').value.trim(),
     phone: document.getElementById('f_phone').value.trim(),
@@ -368,6 +383,55 @@ function confirmDeleteSubcategory(id, name) {
   openConfirm('Alt kategoriyi sil', `"${name}" silinecek.`, async () => {
     await RestoranDB.deleteSubcategory(id);
     await renderCategoriesTab();
+  });
+}
+
+/* ----------------------- Tab: Şehirler ----------------------- */
+async function renderCitiesTab() {
+  const cities = await RestoranDB.getCities();
+  const main = document.getElementById('adminMain');
+
+  main.innerHTML = `
+    <div class="admin-toolbar"><h1>Şehirler</h1></div>
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group"><input id="newCityName" type="text" placeholder="Yeni Şehir Adı"></div>
+        <div class="form-group" style="flex:0 0 auto;"><button class="btn" onclick="handleAddCity()">+ Ekle</button></div>
+      </div>
+    </div>
+    ${cities.length ? `
+      <div class="card">
+        <table class="admin-table">
+          <thead><tr><th>Şehir</th><th>Lokanta Sayısı</th><th></th></tr></thead>
+          <tbody>
+            ${cities.map(city => `
+              <tr>
+                <td>${city.emoji} ${escapeHtml(city.name)}</td>
+                <td>${city.restaurantCount}</td>
+                <td><button class="btn small danger" onclick="confirmDeleteCity('${city.id}', '${escapeHtml(city.name)}')">Sil</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : `<div class="empty-state">Henüz şehir eklenmemiş.</div>`}
+  `;
+}
+
+async function handleAddCity() {
+  const name = document.getElementById('newCityName').value.trim();
+  if (!name) return;
+  showLoader();
+  await RestoranDB.addCity(name);
+  document.getElementById('newCityName').value = '';
+  await renderCitiesTab();
+  hideLoader();
+}
+
+function confirmDeleteCity(id, name) {
+  openConfirm('Şehri sil', `"${name}" ve içindeki tüm lokantalar silinecek.`, async () => {
+    await RestoranDB.deleteCity(id);
+    await renderCitiesTab();
   });
 }
 
