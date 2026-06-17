@@ -138,6 +138,54 @@ h1.page-title {
   font-size: 14px;
 }
 
+.city-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.btn-back {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.btn-back:hover { background: #fdeee0; }
+
+/* Şehir seçimi kartları */
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.city-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.city-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.07);
+}
+
+.city-card .emoji { font-size: 38px; display: block; margin-bottom: 10px; }
+.city-card .name { font-weight: 700; font-size: 17px; }
+.city-card .count { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
 /* Kategori kartları (köfteciler, dönerciler, tatlı yerleri) */
 .category-grid {
   display: grid;
