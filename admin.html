@@ -3,417 +3,846 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Paneli - Lezzet Rehberi</title>
-<link rel="stylesheet" href="style.css">
+<title>Admin Paneli — Lezzet Rehberi</title>
 <style>
-  .loading-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center; z-index:9999; font-weight:bold; }
-  .loading-overlay.show { visibility:visible; opacity:1; }
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1916;
+    --surface2: #242220;
+    --border: #2e2c29;
+    --accent: #e8622a;
+    --accent2: #f5a623;
+    --text: #f0ede8;
+    --text2: #9c9790;
+    --text3: #5c5a56;
+    --green: #4caf76;
+    --red: #e85c5c;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; }
+
+  /* ── LAYOUT ── */
+  .layout { display:flex; min-height:100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:240px; flex-shrink:0;
+    background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    padding:24px 0; position:sticky; top:0; height:100vh;
+  }
+  .sidebar-logo {
+    font-family:'Sora',sans-serif; font-weight:800; font-size:18px;
+    color:var(--accent); padding:0 20px 24px;
+    border-bottom:1px solid var(--border);
+  }
+  .sidebar-logo span { color:var(--text); }
+  .sidebar-logo small { display:block; font-size:11px; color:var(--text3); font-weight:400; margin-top:2px; }
+
+  .nav-item {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 20px; cursor:pointer;
+    font-size:14px; color:var(--text2);
+    transition:all .15s; border-left:3px solid transparent;
+  }
+  .nav-item:hover { color:var(--text); background:var(--surface2); }
+  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(232,98,42,.08); }
+  .nav-icon { font-size:18px; }
+
+  /* ── MAIN ── */
+  .main { flex:1; padding:32px; overflow-x:hidden; }
+
+  .page-header { margin-bottom:28px; }
+  .page-title { font-family:'Sora',sans-serif; font-size:26px; font-weight:800; }
+  .page-sub { color:var(--text2); font-size:14px; margin-top:4px; }
+
+  /* ── STATS ── */
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; margin-bottom:32px; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:20px;
+  }
+  .stat-label { font-size:12px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .stat-val { font-family:'Sora',sans-serif; font-size:28px; font-weight:800; }
+
+  /* ── SECTION PANELS ── */
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  /* ── FORM ── */
+  .form-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; padding:28px; max-width:760px;
+  }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-group.full { grid-column:1/-1; }
+  .form-label { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
+  .form-input, .form-select, .form-textarea {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:10px 14px;
+    color:var(--text); font-size:14px; font-family:'Inter',sans-serif;
+    outline:none; transition:border-color .2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--accent); }
+  .form-select option { background:var(--surface2); }
+  .form-textarea { min-height:90px; resize:vertical; }
+
+  .form-divider {
+    grid-column:1/-1;
+    border:none; border-top:1px solid var(--border);
+    margin:8px 0;
+  }
+  .form-section-title {
+    grid-column:1/-1;
+    font-size:11px; font-weight:700; color:var(--text3);
+    text-transform:uppercase; letter-spacing:1.5px;
+  }
+
+  .btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:11px 20px; border:none; border-radius:10px;
+    font-size:14px; font-weight:600; font-family:'Inter',sans-serif;
+    cursor:pointer; transition:all .15s;
+  }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#d4541f; }
+  .btn-secondary { background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
+  .btn-secondary:hover { color:var(--text); }
+  .btn-danger { background:rgba(232,92,92,.15); color:var(--red); border:1px solid rgba(232,92,92,.3); }
+  .btn-danger:hover { background:rgba(232,92,92,.25); }
+  .btn-sm { padding:7px 14px; font-size:13px; }
+
+  /* Menu section inside form */
+  .menu-builder { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .menu-cat-row { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
+  .menu-items-list { margin-left:8px; }
+  .menu-item-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+  .menu-item-row .form-input { flex:1; }
+
+  /* Photos section */
+  .photo-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .photo-row .form-input { flex:1; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th, td {
+    padding:12px 16px; text-align:left;
+    border-bottom:1px solid var(--border); font-size:14px;
+  }
+  th { color:var(--text3); font-size:12px; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+  tr:hover td { background:var(--surface2); }
+  .td-name { font-weight:600; }
+  .badge {
+    display:inline-block; padding:3px 10px; border-radius:20px;
+    font-size:11px; font-weight:600; background:rgba(232,98,42,.15); color:var(--accent);
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position:fixed; bottom:24px; right:24px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:14px 20px;
+    font-size:14px; font-weight:500;
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    transform:translateY(80px); opacity:0;
+    transition:all .3s; z-index:999;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.success { border-color:var(--green); color:var(--green); }
+  .toast.error { border-color:var(--red); color:var(--red); }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh;
+  }
+  .login-box {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:40px; width:100%; max-width:380px;
+    text-align:center;
+  }
+  .login-box h2 { font-family:'Sora',sans-serif; font-size:22px; margin-bottom:8px; }
+  .login-box p { color:var(--text2); font-size:14px; margin-bottom:28px; }
+  .login-error { color:var(--red); font-size:13px; margin-top:10px; }
+
+  @media(max-width:768px) {
+    .sidebar { width:60px; }
+    .sidebar-logo, .nav-item span { display:none; }
+    .nav-item { justify-content:center; padding:14px; }
+    .form-grid { grid-template-columns:1fr; }
+    .form-group.full { grid-column:1; }
+  }
 </style>
 </head>
 <body>
 
-<div id="root"></div>
-
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal-box">
-    <h2 id="confirmTitle">Onay</h2>
-    <p id="confirmMessage"></p>
-    <div class="modal-actions">
-      <button class="btn secondary" onclick="closeConfirm()">Vazgeç</button>
-      <button class="btn danger" id="confirmActionBtn">Sil</button>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:36px;margin-bottom:12px">🍽️</div>
+    <h2>Admin Girişi</h2>
+    <p>Lezzet Rehberi yönetim paneline giriş yapın</p>
+    <div class="form-group" style="text-align:left;margin-bottom:14px">
+      <label class="form-label">E-posta</label>
+      <input class="form-input" type="email" id="login-email" placeholder="admin@example.com">
     </div>
+    <div class="form-group" style="text-align:left;margin-bottom:20px">
+      <label class="form-label">Şifre</label>
+      <input class="form-input" type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Giriş Yap</button>
+    <div class="login-error" id="login-error"></div>
   </div>
 </div>
 
-<div class="loading-overlay" id="globalLoader">⏳ İşlem yapılıyor, lütfen bekleyin...</div>
+<!-- ADMIN LAYOUT -->
+<div class="layout" id="admin-layout" style="display:none">
 
-<script type="module" src="data.js"></script>
-<script>
-  // Tarayıcı modülün yüklenmesini beklesin
-  window.addEventListener('load', () => {
-    // Şimdi RestoranAuth artık window üzerinden erişilebilir
-    if (typeof RestoranAuth !== 'undefined') {
-      if (RestoranAuth.isLoggedIn()) {
-        renderAdmin();
-      } else {
-        renderLogin();
-      }
-    } else {
-      console.error("RestoranAuth yüklenemedi! Dosya yolunu kontrol et.");
-    }
-  });
-</script>
-
-<script>
-const root = document.getElementById('root');
-let currentTab = 'restaurants';
-let editingRestaurantId = null;
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
-}
-
-function showLoader() { document.getElementById('globalLoader').classList.add('show'); }
-function hideLoader() { document.getElementById('globalLoader').classList.remove('show'); }
-
-/* ----------------------- Onay Modalı ----------------------- */
-function openConfirm(title, message, onConfirm) {
-  document.getElementById('confirmTitle').textContent = title;
-  document.getElementById('confirmMessage').textContent = message;
-  const btn = document.getElementById('confirmActionBtn');
-  btn.onclick = async () => { 
-    closeConfirm();
-    showLoader();
-    await onConfirm(); 
-    hideLoader();
-  };
-  document.getElementById('confirmModal').classList.add('show');
-}
-
-function closeConfirm() {
-  document.getElementById('confirmModal').classList.remove('show');
-}
-
-/* ----------------------- Giriş Ekranı ----------------------- */
-function renderLogin() {
-  root.innerHTML = `
-    <div class="login-box">
-      <h1>🍽️ Admin Girişi</h1>
-      <div id="loginError"></div>
-      <div class="form-group">
-        <label>Kullanıcı Adı</label>
-        <input type="text" id="loginUser" placeholder="admin">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">Lezzet<span>Admin</span><small>Yönetim Paneli</small></div>
+    <nav style="margin-top:12px;flex:1">
+      <div class="nav-item active" onclick="goPanel('dashboard',this)">
+        <span class="nav-icon">📊</span><span>Dashboard</span>
       </div>
-      <div class="form-group">
-        <label>Şifre</label>
-        <input type="password" id="loginPass" placeholder="••••••••">
+      <div class="nav-item" onclick="goPanel('add',this)">
+        <span class="nav-icon">➕</span><span>Restoran Ekle</span>
       </div>
-      <button class="btn" style="width:100%" onclick="handleLogin()">Giriş Yap</button>
+      <div class="nav-item" onclick="goPanel('list',this)">
+        <span class="nav-icon">🗂️</span><span>Restoranlar</span>
+      </div>
+      <div class="nav-item" onclick="goPanel('categories',this)">
+        <span class="nav-icon">🏷️</span><span>Kategoriler</span>
+      </div>
+    </nav>
+    <div style="padding:16px 20px;border-top:1px solid var(--border)">
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()" style="width:100%;justify-content:center">
+        🚪 Çıkış
+      </button>
     </div>
-  `;
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Genel bakış</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Restoran</div>
+          <div class="stat-val" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Şehir Sayısı</div>
+          <div class="stat-val" id="stat-cities">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Kategori Sayısı</div>
+          <div class="stat-val" id="stat-cats">—</div>
+        </div>
+      </div>
+
+      <div class="page-header" style="margin-top:8px">
+        <div class="page-title" style="font-size:18px">Son Eklenenler</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>İsim</th><th>Şehir</th><th>Kategori</th><th>Puan</th></tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD / EDIT -->
+    <div class="panel" id="panel-add">
+      <div class="page-header">
+        <div class="page-title" id="form-panel-title">Restoran Ekle</div>
+        <div class="page-sub">Yeni bir restoran veya yemek yeri ekleyin</div>
+      </div>
+      <div class="form-card">
+        <input type="hidden" id="edit-id">
+        <div class="form-grid">
+
+          <div class="form-section-title">Temel Bilgiler</div>
+          <hr class="form-divider">
+
+          <div class="form-group">
+            <label class="form-label">Restoran Adı *</label>
+            <input class="form-input" id="f-name" placeholder="örn. Asil Köfte">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kategori *</label>
+            <select class="form-select" id="f-category">
+              <option value="">Seçin...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Şehir *</label>
+            <select class="form-select" id="f-city">
+              <option value="">Seçin...</option>
+              <option>İstanbul</option><option>Ankara</option><option>İzmir</option>
+              <option>Bursa</option><option>Antalya</option><option>Adana</option>
+              <option>Konya</option><option>Gaziantep</option><option>Mersin</option>
+              <option>Diyarbakır</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefon</label>
+            <input class="form-input" id="f-phone" placeholder="0224 000 00 00">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Adres</label>
+            <input class="form-input" id="f-address" placeholder="Mahalle, Cadde, No, İlçe">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Açıklama</label>
+            <textarea class="form-textarea" id="f-description" placeholder="Kısa tanıtım yazısı..."></textarea>
+          </div>
+
+          <div class="form-section-title" style="margin-top:8px">Ek Bilgiler</div>
+          <hr class="form-divider">
+
+          <div class="form-group">
+            <label class="form-label">Çalışma Saatleri</label>
+            <input class="form-input" id="f-hours" placeholder="08:00-22:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Puan (1-5)</label>
+            <input class="form-input" id="f-rating" type="number" min="1" max="5" step="0.1" placeholder="4.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Enlem (lat)</label>
+            <input class="form-input" id="f-lat" placeholder="40.1885">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Boylam (lng)</label>
+            <input class="form-input" id="f-lng" placeholder="29.0610">
+          </div>
+
+          <!-- PHOTOS -->
+          <div class="form-section-title" style="margin-top:8px">Fotoğraf URL'leri</div>
+          <hr class="form-divider">
+          <div class="form-group full">
+            <div id="photos-container">
+              <div class="photo-row">
+                <input class="form-input" placeholder="https://...jpg" name="photo">
+                <button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addPhotoRow()">+ Fotoğraf Ekle</button>
+          </div>
+
+          <!-- MENU -->
+          <div class="form-section-title" style="margin-top:8px">Menü</div>
+          <hr class="form-divider">
+          <div class="form-group full">
+            <div id="menu-container"></div>
+            <button class="btn btn-secondary btn-sm" onclick="addMenuCategory()">+ Menü Kategorisi Ekle</button>
+          </div>
+
+          <!-- SUBMIT -->
+          <div class="form-group full" style="display:flex;gap:12px;margin-top:8px">
+            <button class="btn btn-primary" onclick="submitForm()">💾 Kaydet</button>
+            <button class="btn btn-secondary" onclick="clearForm()">✕ Temizle</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div class="panel" id="panel-list">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Restoranlar</div>
+          <div class="page-sub">Tüm kayıtlar</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select class="form-select" id="filter-city" onchange="filterList()" style="padding:8px 12px;font-size:13px">
+            <option value="">Tüm Şehirler</option>
+            <option>İstanbul</option><option>Ankara</option><option>İzmir</option>
+            <option>Bursa</option><option>Antalya</option><option>Adana</option>
+            <option>Konya</option><option>Gaziantep</option><option>Mersin</option><option>Diyarbakır</option>
+          </select>
+          <select class="form-select" id="filter-cat" onchange="filterList()" style="padding:8px 12px;font-size:13px">
+            <option value="">Tüm Kategoriler</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>İsim</th><th>Şehir</th><th>Kategori</th><th>Telefon</th><th>Puan</th><th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="list-tbody"></tbody>
+        </table>
+        <div class="stat-label" id="list-empty" style="padding:32px;text-align:center;display:none">Kayıt yok.</div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="panel" id="panel-categories">
+      <div class="page-header">
+        <div class="page-title" id="cat-panel-title">Kategori Ekle</div>
+        <div class="page-sub">Restoran kategorilerini ekleyin, düzenleyin veya silin</div>
+      </div>
+      <div class="form-card" style="margin-bottom:28px">
+        <input type="hidden" id="edit-cat-id">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Kategori Adı *</label>
+            <input class="form-input" id="f-cat-name" placeholder="örn. Köfteci" onkeydown="if(event.key==='Enter')submitCategory()">
+          </div>
+          <div class="form-group full" style="display:flex;gap:12px">
+            <button class="btn btn-primary" id="cat-submit-btn" onclick="submitCategory()">💾 Kaydet</button>
+            <button class="btn btn-secondary" onclick="clearCategoryForm()">✕ Temizle</button>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Kategori</th><th>Kullanım</th><th>İşlem</th></tr></thead>
+          <tbody id="cat-tbody"></tbody>
+        </table>
+        <div class="stat-label" id="cat-empty" style="padding:32px;text-align:center;display:none">Kategori yok.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getDatabase, ref, set, push, remove, onValue, get }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHeie0D4Rr5PfP_HtTt-SE9W_QCE_fKo0",
+  authDomain: "yemek-63572.firebaseapp.com",
+  databaseURL: "https://yemek-63572-default-rtdb.firebaseio.com",
+  projectId: "yemek-63572",
+  storageBucket: "yemek-63572.firebasestorage.app",
+  messagingSenderId: "674967323369",
+  appId: "1:674967323369:web:81be0f511873434a55a678"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let allData = {};
+let allCategories = {};
+
+// ── AUTH ──
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  document.getElementById('login-error').textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    document.getElementById('login-error').textContent = 'Giriş başarısız: ' + (e.message || e.code);
+  }
+};
+
+window.doLogout = async function() {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-layout').style.display = 'flex';
+    loadData();
+    loadCategories();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-layout').style.display = 'none';
+  }
+});
+
+// ── LOAD ──
+function loadData() {
+  onValue(ref(db, 'restaurants'), snap => {
+    allData = snap.val() || {};
+    renderDashboard();
+    renderList();
+    renderCategoriesTable();
+  });
 }
 
-async function handleLogin() {
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value;
+// ── CATEGORIES ──
+const DEFAULT_CATEGORIES = ['Köfteci','Dönerci','Tatlıcı','Pideci','Kebapçı','Balıkçı','Çorbacı','Pastane','Lahmacuncu','Kahvaltıcı','Cafe','Restoran'];
 
-  // Giriş işlemi başladığında loader'ı açıyoruz
-  showLoader();
+function esc(s) {
+  return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadCategories() {
+  try {
+    const snap = await get(ref(db, 'categories'));
+    if (!snap.exists()) {
+      // İlk kurulum: sunucuda kategori yoksa varsayılanları ekle
+      for (const name of DEFAULT_CATEGORIES) {
+        await push(ref(db, 'categories'), { name });
+      }
+    }
+  } catch (e) {
+    showToast('Kategoriler yüklenemedi: ' + e.message, 'error');
+  }
+  onValue(ref(db, 'categories'), snap => {
+    allCategories = snap.val() || {};
+    renderCategorySelects();
+    renderCategoriesTable();
+    renderDashboard();
+  });
+}
+
+function renderCategorySelects() {
+  const names = Object.values(allCategories).map(c => c.name).filter(Boolean).sort((a,b) => a.localeCompare(b, 'tr'));
+  const optsHtml = names.map(n => `<option>${esc(n)}</option>`).join('');
+
+  const fcat = document.getElementById('f-category');
+  const fcatCurrent = fcat.value;
+  fcat.innerHTML = '<option value="">Seçin...</option>' + optsHtml;
+  if (names.includes(fcatCurrent)) fcat.value = fcatCurrent;
+
+  const filterCat = document.getElementById('filter-cat');
+  const filterCurrent = filterCat.value;
+  filterCat.innerHTML = '<option value="">Tüm Kategoriler</option>' + optsHtml;
+  if (names.includes(filterCurrent)) filterCat.value = filterCurrent;
+}
+
+function renderCategoriesTable() {
+  const tbody = document.getElementById('cat-tbody');
+  const empty = document.getElementById('cat-empty');
+  if (!tbody) return;
+  const entries = Object.entries(allCategories).sort((a,b) => (a[1].name||'').localeCompare(b[1].name||'', 'tr'));
+
+  if (entries.length === 0) { tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+
+  const restaurantItems = Object.values(allData);
+  tbody.innerHTML = entries.map(([id, c]) => {
+    const name = c.name || '';
+    const count = restaurantItems.filter(r => r.category === name).length;
+    return `<tr>
+      <td class="td-name">${esc(name)}</td>
+      <td><span class="badge">${count} restoran</span></td>
+      <td style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="editCategory('${id}')">✏️ Düzenle</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCategory('${id}','${esc(name).replace(/'/g,"\\'")}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.submitCategory = async function() {
+  const id = document.getElementById('edit-cat-id').value;
+  const name = document.getElementById('f-cat-name').value.trim();
+  if (!name) { showToast('Kategori adı girin.', 'error'); return; }
+
+  const dup = Object.entries(allCategories).some(([cid, c]) => cid !== id && (c.name||'').toLowerCase() === name.toLowerCase());
+  if (dup) { showToast('Bu kategori zaten mevcut.', 'error'); return; }
 
   try {
-    // Eğer RestoranAuth.login fonksiyonu veritabanına (örn: Firebase) asenkron istek atıyorsa await ekliyoruz
-    // Senkron bir fonksiyonsa bile await koymak hata vermez.
-    const loginResult = await RestoranAuth.login(user, pass);
-
-    if (loginResult) {
-      renderAdmin();
+    if (id) {
+      const oldName = allCategories[id] ? allCategories[id].name : null;
+      await set(ref(db, 'categories/' + id), { name });
+      if (oldName && oldName !== name) {
+        const affected = Object.entries(allData).filter(([, r]) => r.category === oldName);
+        for (const [rid] of affected) {
+          await set(ref(db, 'restaurants/' + rid + '/category'), name);
+        }
+      }
+      showToast('Kategori güncellendi ✓', 'success');
     } else {
-      document.getElementById('loginError').innerHTML = `<div class="error-msg">Kullanıcı adı veya şifre hatalı.</div>`;
+      await push(ref(db, 'categories'), { name });
+      showToast('Kategori eklendi ✓', 'success');
     }
-  } catch (error) {
-    console.error("Giriş hatası:", error);
-    document.getElementById('loginError').innerHTML = `<div class="error-msg">Sistem hatası oluştu. Lütfen tekrar deneyin.</div>`;
-  } finally {
-    // İşlem başarılı olsa da hata alsa da loader'ı mutlaka kapatıyoruz
-    hideLoader();
+    clearCategoryForm();
+  } catch (e) {
+    showToast('Hata: ' + e.message, 'error');
   }
+};
+
+window.clearCategoryForm = function() {
+  document.getElementById('edit-cat-id').value = '';
+  document.getElementById('f-cat-name').value = '';
+  document.getElementById('cat-panel-title').textContent = 'Kategori Ekle';
+  document.getElementById('cat-submit-btn').textContent = '💾 Kaydet';
+};
+
+window.editCategory = function(id) {
+  const c = allCategories[id]; if (!c) return;
+  document.getElementById('edit-cat-id').value = id;
+  document.getElementById('f-cat-name').value = c.name || '';
+  document.getElementById('cat-panel-title').textContent = 'Kategori Düzenle';
+  document.getElementById('cat-submit-btn').textContent = '💾 Güncelle';
+  goPanel('categories', document.querySelectorAll('.nav-item')[3]);
+  window.scrollTo(0, 0);
+};
+
+window.deleteCategory = async function(id, name) {
+  const count = Object.values(allData).filter(r => r.category === name).length;
+  let msg = `"${name}" kategorisi silinecek.`;
+  if (count > 0) msg += ` Bu kategoriye ait ${count} restoran kaydı var; bu kayıtlar silinmez ama kategori artık seçim listesinde görünmeyecek.`;
+  msg += ' Emin misiniz?';
+  if (!confirm(msg)) return;
+  try {
+    await remove(ref(db, 'categories/' + id));
+    showToast('Kategori silindi ✓', 'success');
+  } catch (e) {
+    showToast('Hata: ' + e.message, 'error');
+  }
+};
+
+function renderDashboard() {
+  const items = Object.values(allData);
+  document.getElementById('stat-total').textContent = items.length;
+  document.getElementById('stat-cities').textContent = new Set(items.map(r=>r.city)).size;
+  document.getElementById('stat-cats').textContent = Object.keys(allCategories).length || new Set(items.map(r=>r.category)).size;
+
+  const tbody = document.getElementById('recent-tbody');
+  const recent = Object.entries(allData).slice(-8).reverse();
+  tbody.innerHTML = recent.map(([id,r]) => `
+    <tr>
+      <td class="td-name">${r.name||'—'}</td>
+      <td>${r.city||'—'}</td>
+      <td><span class="badge">${r.category||'—'}</span></td>
+      <td>${r.rating ? '⭐ '+r.rating : '—'}</td>
+    </tr>`).join('');
 }
 
-function handleLogout() {
-  RestoranAuth.logout();
-  renderLogin();
+function renderList(cityF='', catF='') {
+  const tbody = document.getElementById('list-tbody');
+  const empty = document.getElementById('list-empty');
+  let entries = Object.entries(allData);
+  if (cityF) entries = entries.filter(([,r]) => r.city === cityF);
+  if (catF)  entries = entries.filter(([,r]) => r.category === catF);
+
+  if (entries.length === 0) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = entries.map(([id,r]) => `
+    <tr>
+      <td class="td-name">${r.name||'—'}</td>
+      <td>${r.city||'—'}</td>
+      <td><span class="badge">${r.category||'—'}</span></td>
+      <td>${r.phone||'—'}</td>
+      <td>${r.rating ? '⭐ '+r.rating : '—'}</td>
+      <td style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="editItem('${id}')">✏️ Düzenle</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteItem('${id}','${(r.name||'').replace(/'/g,"\\'")}')">🗑️</button>
+      </td>
+    </tr>`).join('');
 }
+window.filterList = function() {
+  renderList(
+    document.getElementById('filter-city').value,
+    document.getElementById('filter-cat').value
+  );
+};
 
-/* ----------------------- Admin İskelet ----------------------- */
-function renderAdmin() {
-  root.innerHTML = `
-    <div class="admin-layout">
-      <div class="admin-sidebar">
-        <div class="logo">🍽️ Admin</div>
-        <nav>
-          <a class="${currentTab === 'restaurants' ? 'active' : ''}" onclick="switchTab('restaurants')"><span class="label">🍽️ Lokantalar</span></a>
-          <a class="${currentTab === 'categories' ? 'active' : ''}" onclick="switchTab('categories')"><span class="label">🗂️ Kategoriler</span></a>
-          <a class="${currentTab === 'cities' ? 'active' : ''}" onclick="switchTab('cities')"><span class="label">🌆 Şehirler</span></a>
-          <a onclick="handleLogout()"><span class="label">🚪 Çıkış Yap</span></a>
-        </nav>
-      </div>
-      <div class="admin-main" id="adminMain">Yükleniyor...</div>
-    </div>
-  `;
-  renderTabContent();
-}
+// ── FORM ──
+window.submitForm = async function() {
+  const id = document.getElementById('edit-id').value;
+  const name = document.getElementById('f-name').value.trim();
+  const category = document.getElementById('f-category').value;
+  const city = document.getElementById('f-city').value;
+  if (!name || !category || !city) { showToast('Zorunlu alanları doldurun.','error'); return; }
 
-function switchTab(tab) {
-  currentTab = tab;
-  renderAdmin();
-}
+  // Photos
+  const photoInputs = document.querySelectorAll('#photos-container input[name="photo"]');
+  const photos = {};
+  let pi = 0;
+  photoInputs.forEach(inp => { if (inp.value.trim()) photos['p'+(pi++)] = inp.value.trim(); });
 
-async function renderTabContent() {
-  showLoader();
-  if (currentTab === 'restaurants') await renderRestaurantsTab();
-  else if (currentTab === 'categories') await renderCategoriesTab();
-  else if (currentTab === 'cities') await renderCitiesTab();
-  hideLoader();
-}
-
-/* ----------------------- Tab: Lokantalar ----------------------- */
-async function renderRestaurantsTab() {
-  const restaurants = await RestoranDB.getRestaurants({});
-  const main = document.getElementById('adminMain');
-
-  main.innerHTML = `
-    <div class="admin-toolbar">
-      <h1>Lokantalar (${restaurants.length})</h1>
-      <button class="btn" onclick="openRestaurantForm()">+ Yeni Lokanta</button>
-    </div>
-    <div id="restaurantFormContainer"></div>
-    <table class="admin-table">
-      <thead><tr><th>İsim</th><th>Şehir</th><th>Kategori</th><th>Adres</th><th>Menü</th><th></th></tr></thead>
-      <tbody>
-        ${restaurants.map(r => `
-          <tr>
-            <td>${escapeHtml(r.name)}</td>
-            <td>${r.city ? escapeHtml(r.city.name) : '-'}</td>
-            <td>${r.category ? escapeHtml(r.category.name) : '-'}${r.subcategory ? ' / ' + escapeHtml(r.subcategory.name) : ''}</td>
-            <td>${escapeHtml(r.address || '-')}</td>
-            <td>${(r.menuItems || []).length} ürün</td>
-            <td style="white-space:nowrap">
-              <button class="btn small secondary" onclick="openRestaurantForm('${r.id}')">Düzenle</button>
-              <button class="btn small danger" onclick="confirmDeleteRestaurant('${r.id}', '${escapeHtml(r.name)}')">Sil</button>
-            </td>
-          </tr>
-        `).join('') || `<tr><td colspan="6" style="text-align:center;padding:20px;">Henüz lokanta eklenmemiş.</td></tr>`}
-      </tbody>
-    </table>
-  `;
-}
-
-function confirmDeleteRestaurant(id, name) {
-  openConfirm('Lokantayı sil', `"${name}" silinecek.`, async () => {
-    await RestoranDB.deleteRestaurant(id);
-    await renderRestaurantsTab();
+  // Menu
+  const menuData = {};
+  document.querySelectorAll('.menu-cat-block').forEach(block => {
+    const catName = block.querySelector('.menu-cat-name').value.trim();
+    if (!catName) return;
+    menuData[catName] = {};
+    let mi = 0;
+    block.querySelectorAll('.menu-item-row').forEach(row => {
+      const n = row.querySelector('.mi-name').value.trim();
+      const p = row.querySelector('.mi-price').value.trim();
+      if (n) menuData[catName]['item'+(mi++)] = { name: n, price: p };
+    });
   });
-}
-
-let formMenuItems = [];
-let formCategories = [];
-let formCities = [];
-let _pendingImageData = undefined;
-
-async function openRestaurantForm(id) {
-  showLoader();
-  editingRestaurantId = id || null;
-  const restaurant = id ? await RestoranDB.getRestaurantById(id) : null;
-  formCategories = await RestoranDB.getCategories();
-  
-  // Şehirleri veritabanından güncel olarak çekiyoruz
-  formCities = await RestoranDB.getCities(); 
-  
-  hideLoader();
-
-  // ... formun geri kalanı ...
-  // Şehir dropdown kısmı zaten form içerisinde şöyle olmalı:
-  /*
-  <select id="f_city">
-    <option value="">Seçiniz</option>
-    ${formCities.map(c => `<option value="${c.id}" ${restaurant && restaurant.cityId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
-  </select>
-  */
-}
-
-function onImageSelected(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    _pendingImageData = e.target.result;
-    document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" style="height:80px;border-radius:8px;">`;
-  };
-  reader.readAsDataURL(file);
-}
-
-function onFormCategoryChange(preselectSubId) {
-  const categoryId = document.getElementById('f_category').value;
-  const category = formCategories.find(c => c.id === categoryId);
-  const subSelect = document.getElementById('f_subcategory');
-
-  if (!category || !category.subcategories.length) {
-    subSelect.innerHTML = `<option value="">Yok</option>`;
-    return;
-  }
-
-  subSelect.innerHTML = `<option value="">Seçilmedi</option>` +
-    category.subcategories.map(s => `<option value="${s.id}" ${preselectSubId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
-}
-
-function renderMenuItemRows() {
-  document.getElementById('menuItemsContainer').innerHTML = formMenuItems.map((item, idx) => `
-    <div class="menu-item-row">
-      <input type="text" placeholder="Ürün adı" value="${escapeHtml(item.name)}" oninput="formMenuItems[${idx}].name = this.value">
-      <input type="number" class="price-input" placeholder="Fiyat ₺" value="${item.price}" oninput="formMenuItems[${idx}].price = this.value">
-      <button class="btn small danger" onclick="removeMenuItemRow(${idx})">✕</button>
-    </div>
-  `).join('');
-}
-
-function addMenuItemRow() { formMenuItems.push({ name: '', price: '' }); renderMenuItemRows(); }
-function removeMenuItemRow(idx) { formMenuItems.splice(idx, 1); renderMenuItemRows(); }
-function closeRestaurantForm() { document.getElementById('restaurantFormContainer').innerHTML = ''; }
-
-async function submitRestaurantForm() {
-  const name = document.getElementById('f_name').value.trim();
-  const cityId = document.getElementById('f_city').value;
-  const categoryId = document.getElementById('f_category').value;
-
-  if (!name || !cityId || !categoryId) { alert('İsim, şehir ve kategori zorunludur.'); return; }
-
-  showLoader();
-  const validMenuItems = formMenuItems.filter(m => m.name.trim() && m.price !== '').map(m => ({ id: m.id, name: m.name.trim(), price: Number(m.price) }));
 
   const payload = {
-    name, cityId, categoryId,
-    subcategoryId: document.getElementById('f_subcategory').value || null,
-    address: document.getElementById('f_address').value.trim(),
-    phone: document.getElementById('f_phone').value.trim(),
-    description: document.getElementById('f_description').value.trim(),
-    menuItems: validMenuItems
+    name, category, city,
+    phone: document.getElementById('f-phone').value.trim(),
+    address: document.getElementById('f-address').value.trim(),
+    description: document.getElementById('f-description').value.trim(),
+    hours: document.getElementById('f-hours').value.trim(),
+    rating: document.getElementById('f-rating').value || null,
+    lat: document.getElementById('f-lat').value || null,
+    lng: document.getElementById('f-lng').value || null,
+    photos: Object.keys(photos).length ? photos : null,
+    menu: Object.keys(menuData).length ? menuData : null,
+    updatedAt: new Date().toISOString()
   };
+  // clean nulls
+  Object.keys(payload).forEach(k => payload[k] === null && delete payload[k]);
 
-  if (_pendingImageData !== undefined) payload.image = _pendingImageData;
+  try {
+    if (id) {
+      await set(ref(db, 'restaurants/'+id), payload);
+      showToast('Restoran güncellendi ✓','success');
+    } else {
+      await push(ref(db, 'restaurants'), payload);
+      showToast('Restoran eklendi ✓','success');
+    }
+    clearForm();
+    goPanel('list', document.querySelectorAll('.nav-item')[2]);
+  } catch(e) {
+    showToast('Hata: '+e.message,'error');
+  }
+};
 
-  if (editingRestaurantId) await RestoranDB.updateRestaurant(editingRestaurantId, payload);
-  else await RestoranDB.addRestaurant(payload);
+window.clearForm = function() {
+  ['f-name','f-phone','f-address','f-description','f-hours','f-rating','f-lat','f-lng'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-category').value = '';
+  document.getElementById('f-city').value = '';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('photos-container').innerHTML = `
+    <div class="photo-row">
+      <input class="form-input" placeholder="https://...jpg" name="photo">
+      <button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>
+    </div>`;
+  document.getElementById('menu-container').innerHTML = '';
+  document.getElementById('form-panel-title').textContent = 'Restoran Ekle';
+};
 
-  closeRestaurantForm();
-  await renderRestaurantsTab();
-  hideLoader();
-}
+window.editItem = function(id) {
+  const r = allData[id]; if (!r) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-name').value = r.name || '';
+  document.getElementById('f-category').value = r.category || '';
+  document.getElementById('f-city').value = r.city || '';
+  document.getElementById('f-phone').value = r.phone || '';
+  document.getElementById('f-address').value = r.address || '';
+  document.getElementById('f-description').value = r.description || '';
+  document.getElementById('f-hours').value = r.hours || '';
+  document.getElementById('f-rating').value = r.rating || '';
+  document.getElementById('f-lat').value = r.lat || '';
+  document.getElementById('f-lng').value = r.lng || '';
 
-/* ----------------------- Tab: Kategoriler ----------------------- */
-async function renderCategoriesTab() {
-  const categories = await RestoranDB.getCategories();
-  const main = document.getElementById('adminMain');
+  // Photos
+  const pc = document.getElementById('photos-container');
+  pc.innerHTML = '';
+  const photos = r.photos ? Object.values(r.photos) : [''];
+  photos.forEach(url => {
+    const div = document.createElement('div'); div.className = 'photo-row';
+    div.innerHTML = `<input class="form-input" placeholder="https://...jpg" name="photo" value="${url}">
+      <button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>`;
+    pc.appendChild(div);
+  });
 
-  main.innerHTML = `
-    <div class="admin-toolbar"><h1>Kategoriler</h1></div>
-    <div class="card">
-      <div class="form-row">
-        <div class="form-group"><input id="newCategoryName" type="text" placeholder="Yeni Kategori Adı"></div>
-        <div class="form-group" style="flex:0 0 auto;"><button class="btn" onclick="handleAddCategory()">+ Ekle</button></div>
-      </div>
+  // Menu
+  const mc = document.getElementById('menu-container');
+  mc.innerHTML = '';
+  if (r.menu) {
+    Object.entries(r.menu).forEach(([catName, items]) => {
+      addMenuCategory(catName, Object.values(items));
+    });
+  }
+
+  document.getElementById('form-panel-title').textContent = 'Restoran Düzenle';
+  goPanel('add', document.querySelectorAll('.nav-item')[1]);
+  window.scrollTo(0,0);
+};
+
+window.deleteItem = async function(id, name) {
+  if (!confirm(`"${name}" silinecek. Emin misiniz?`)) return;
+  try {
+    await remove(ref(db, 'restaurants/'+id));
+    showToast('Silindi ✓','success');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+// ── MENU BUILDER ──
+window.addMenuCategory = function(catName='', items=[]) {
+  const mc = document.getElementById('menu-container');
+  const div = document.createElement('div');
+  div.className = 'menu-cat-block menu-builder';
+  div.style.marginBottom = '12px';
+  div.innerHTML = `
+    <div class="menu-cat-row">
+      <input class="form-input menu-cat-name" placeholder="Kategori adı (örn. Ana Yemekler)" value="${catName}" style="flex:1">
+      <button class="btn btn-danger btn-sm" onclick="removeRow(this.parentElement.parentElement)">✕ Kaldır</button>
     </div>
-    ${categories.map(cat => `
-      <div class="card">
-        <div class="admin-toolbar">
-          <h2>${cat.emoji} ${escapeHtml(cat.name)} <span class="badge">${cat.restaurantCount} lokanta</span></h2>
-          <button class="btn small danger" onclick="confirmDeleteCategory('${cat.id}', '${escapeHtml(cat.name)}')">Kategoriyi Sil</button>
-        </div>
-        <table class="admin-table">
-          <thead><tr><th>Alt Kategori</th><th></th></tr></thead>
-          <tbody>
-            ${cat.subcategories.map(sub => `
-              <tr>
-                <td>${sub.emoji} ${escapeHtml(sub.name)}</td>
-                <td><button class="btn small danger" onclick="confirmDeleteSubcategory('${sub.id}', '${escapeHtml(sub.name)}')">Sil</button></td>
-              </tr>
-            `).join('') || `<tr><td colspan="2">Alt kategori yok.</td></tr>`}
-          </tbody>
-        </table>
-        <div class="form-row" style="margin-top:12px;">
-          <div class="form-group"><input type="text" id="newSub_${cat.id}" placeholder="Alt kategori adı"></div>
-          <div class="form-group" style="flex:0 0 auto;"><button class="btn small secondary" onclick="handleAddSubcategory('${cat.id}')">+ Alt Kategori Ekle</button></div>
-        </div>
-      </div>
-    `).join('')}
-  `;
+    <div class="menu-items-list"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addMenuItem(this)">+ Ürün Ekle</button>`;
+  mc.appendChild(div);
+  const list = div.querySelector('.menu-items-list');
+  if (items.length) {
+    items.forEach(item => addMenuItemToList(list, item.name||'', item.price||''));
+  } else {
+    addMenuItemToList(list);
+  }
+};
+
+function addMenuItemToList(list, name='', price='') {
+  const div = document.createElement('div'); div.className = 'menu-item-row';
+  div.innerHTML = `
+    <input class="form-input mi-name" placeholder="Ürün adı" value="${name}">
+    <input class="form-input mi-price" placeholder="Fiyat (₺)" value="${price}" style="max-width:120px">
+    <button class="btn btn-danger btn-sm" onclick="removeRow(this.parentElement)">✕</button>`;
+  list.appendChild(div);
 }
 
-async function handleAddCategory() {
-  const name = document.getElementById('newCategoryName').value.trim();
-  if (!name) return;
-  showLoader();
-  await RestoranDB.addCategory(name);
-  await renderCategoriesTab();
-  hideLoader();
+window.addMenuItem = function(btn) {
+  const list = btn.previousElementSibling;
+  addMenuItemToList(list);
+};
+
+window.addPhotoRow = function() {
+  const pc = document.getElementById('photos-container');
+  const div = document.createElement('div'); div.className = 'photo-row';
+  div.innerHTML = `<input class="form-input" placeholder="https://...jpg" name="photo">
+    <button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>`;
+  pc.appendChild(div);
+};
+
+window.removeRow = function(el) { el.remove(); };
+
+// ── NAV ──
+window.goPanel = function(name, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+};
+
+// ── TOAST ──
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.className = 'toast', 3000);
 }
-
-function confirmDeleteCategory(id, name) {
-  openConfirm('Kategoriyi sil', `"${name}" ve içindeki her şey silinecek.`, async () => {
-    await RestoranDB.deleteCategory(id);
-    await renderCategoriesTab();
-  });
-}
-
-async function handleAddSubcategory(categoryId) {
-  const name = document.getElementById(`newSub_${categoryId}`).value.trim();
-  if (!name) return;
-  showLoader();
-  await RestoranDB.addSubcategory(categoryId, name);
-  await renderCategoriesTab();
-  hideLoader();
-}
-
-function confirmDeleteSubcategory(id, name) {
-  openConfirm('Alt kategoriyi sil', `"${name}" silinecek.`, async () => {
-    await RestoranDB.deleteSubcategory(id);
-    await renderCategoriesTab();
-  });
-}
-
-/* ----------------------- Tab: Şehirler ----------------------- */
-async function renderCitiesTab() {
-  const cities = await RestoranDB.getCities();
-  const main = document.getElementById('adminMain');
-
-  main.innerHTML = `
-    <div class="admin-toolbar"><h1>Şehirler</h1></div>
-    <div class="card">
-      <div class="form-row">
-        <div class="form-group"><input id="newCityName" type="text" placeholder="Yeni Şehir Adı"></div>
-        <div class="form-group" style="flex:0 0 auto;"><button class="btn" onclick="handleAddCity()">+ Ekle</button></div>
-      </div>
-    </div>
-    ${cities.length ? `
-      <div class="card">
-        <table class="admin-table">
-          <thead><tr><th>Şehir</th><th>Lokanta Sayısı</th><th></th></tr></thead>
-          <tbody>
-            ${cities.map(city => `
-              <tr>
-                <td>${city.emoji} ${escapeHtml(city.name)}</td>
-                <td>${city.restaurantCount}</td>
-                <td><button class="btn small danger" onclick="confirmDeleteCity('${city.id}', '${escapeHtml(city.name)}')">Sil</button></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    ` : `<div class="empty-state">Henüz şehir eklenmemiş.</div>`}
-  `;
-}
-
-async function handleAddCity() {
-  const name = document.getElementById('newCityName').value.trim();
-  if (!name) return;
-  showLoader();
-  await RestoranDB.addCity(name);
-  document.getElementById('newCityName').value = '';
-  await renderCitiesTab();
-  hideLoader();
-}
-
-function confirmDeleteCity(id, name) {
-  openConfirm('Şehri sil', `"${name}" ve içindeki tüm lokantalar silinecek.`, async () => {
-    await RestoranDB.deleteCity(id);
-    await renderCitiesTab();
-  });
-}
-
-/* ----------------------- Başlangıç ----------------------- */
-if (RestoranAuth.isLoggedIn()) renderAdmin();
-else renderLogin();
 </script>
 </body>
 </html>
