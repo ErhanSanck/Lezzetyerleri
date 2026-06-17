@@ -85,25 +85,67 @@ const RestoranDB = {
       restaurantCount: data[key].restaurantCount || 0
     })).sort((a,b) => a.name.localeCompare(b.name, 'tr'));
   },
-  // data.js içerisine ekleyin
-async getRestaurants(cityId = null) {
-  const response = await fetch(`${FIREBASE_URL}/restaurants.json`);
-  const data = await response.json();
-  if (!data) return [];
-  
-  let list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-  
-  // Eğer bir şehir seçildiyse filtrele
-  if (cityId) {
-    list = list.filter(r => r.cityId === cityId);
-  }
-  return list;
-},
-  // ... Geri kalan fonksiyonlarınız aynı şekilde kalabilir ...
-  
+
   async getCityBySlug(slug) {
     const cities = await this.getCities();
     return cities.find(c => c.slug === slug) || null;
+  },
+
+  async getCategories() {
+    const response = await fetch(`${FIREBASE_URL}/categories.json`);
+    const data = await response.json();
+    if (!data) return [];
+    
+    return Object.keys(data).map(key => ({ id: key, ...data[key] }));
+  },
+
+  async getCategoryBySlug(slug) {
+    const categories = await this.getCategories();
+    return categories.find(c => c.slug === slug) || null;
+  },
+
+  async getRestaurants(params = {}) {
+    const response = await fetch(`${FIREBASE_URL}/restaurants.json`);
+    const data = await response.json();
+    if (!data) return [];
+    
+    let list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+    
+    // Şehir filtresi
+    if (params.citySlug) {
+      list = list.filter(r => r.city?.slug === params.citySlug);
+    }
+    
+    // Kategori filtresi
+    if (params.categorySlug) {
+      list = list.filter(r => r.category?.slug === params.categorySlug);
+    }
+    
+    // Alt kategori filtresi
+    if (params.subcategorySlug) {
+      list = list.filter(r => r.subcategory?.slug === params.subcategorySlug);
+    }
+    
+    // Arama filtresi
+    if (params.query) {
+      const q = params.query.toLowerCase();
+      list = list.filter(r => 
+        r.name?.toLowerCase().includes(q) ||
+        r.address?.toLowerCase().includes(q) ||
+        r.category?.name?.toLowerCase().includes(q) ||
+        r.subcategory?.name?.toLowerCase().includes(q)
+      );
+    }
+    
+    return list;
+  },
+
+  async getRestaurantById(id) {
+    const response = await fetch(`${FIREBASE_URL}/restaurants/${id}.json`);
+    const data = await response.json();
+    if (!data) return null;
+    
+    return { id, ...data };
   }
 };
 
