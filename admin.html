@@ -95,14 +95,29 @@ function renderLogin() {
   `;
 }
 
-function handleLogin() {
+async function handleLogin() {
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
 
-  if (RestoranAuth.login(user, pass)) {
-    renderAdmin();
-  } else {
-    document.getElementById('loginError').innerHTML = `<div class="error-msg">Kullanıcı adı veya şifre hatalı.</div>`;
+  // Giriş işlemi başladığında loader'ı açıyoruz
+  showLoader();
+
+  try {
+    // Eğer RestoranAuth.login fonksiyonu veritabanına (örn: Firebase) asenkron istek atıyorsa await ekliyoruz
+    // Senkron bir fonksiyonsa bile await koymak hata vermez.
+    const loginResult = await RestoranAuth.login(user, pass);
+
+    if (loginResult) {
+      renderAdmin();
+    } else {
+      document.getElementById('loginError').innerHTML = `<div class="error-msg">Kullanıcı adı veya şifre hatalı.</div>`;
+    }
+  } catch (error) {
+    console.error("Giriş hatası:", error);
+    document.getElementById('loginError').innerHTML = `<div class="error-msg">Sistem hatası oluştu. Lütfen tekrar deneyin.</div>`;
+  } finally {
+    // İşlem başarılı olsa da hata alsa da loader'ı mutlaka kapatıyoruz
+    hideLoader();
   }
 }
 
