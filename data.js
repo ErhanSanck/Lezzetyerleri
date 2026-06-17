@@ -308,30 +308,3 @@ const RestoranDB = {
 };
 
 window.RestoranDB = RestoranDB;
-// data.js dosyasının en altına ekleyin
-const RestoranAuth = {
-  // Basit bir şifre kontrolü (Admin panelini korumak için)
-  login(user, pass) {
-    // BURAYA GERÇEK BİR ŞİFRE VEYA FIREBASE AUTH EKLEMELİSİNİZ
-    // Örnek basit kontrol:
-    return new Promise((resolve) => {
-      if (user === "admin" && pass === "123456") {
-        localStorage.setItem('isAdminLoggedIn', 'true');
-        resolve(true);
-      } else {
-        resolve(false);
-      }
-    });
-  },
-
-  logout() {
-    localStorage.removeItem('isAdminLoggedIn');
-  },
-
-  isLoggedIn() {
-    return localStorage.getItem('isAdminLoggedIn') === 'true';
-  }
-};
-
-window.RestoranAuth = RestoranAuth; // Bunu mutlaka ekleyin ki admin.html görsün
-
