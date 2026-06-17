@@ -117,13 +117,80 @@ async function loadFullRawDB() {
 /* ----------------------- Public API ----------------------- */
 const RestoranDB = {
 
-  async getCities() {
-    const rawData = await loadFullRawDB();
-    return rawData.cities.map(city => ({
-      ...city,
-      restaurantCount: rawData.restaurants.filter(r => r.cityId === city.id).length
-    })).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
-  },
+ // 81 İl Sabit Listesi (data.js içine eklenecek)
+const TURKEY_CITIES = [
+  { name: "Adana", emoji: "🍊" }, { name: "Adıyaman", emoji: "⛰️" }, { name: "Afyonkarahisar", emoji: "🧆" },
+  { name: "Ağrı", emoji: "🏔️" }, { name: "Amasya", emoji: "🍏" }, { name: "Ankara", emoji: "🏛️" },
+  { name: "Antalya", emoji: "☀️" }, { name: "Artvin", emoji: "🌲" }, { name: "Aydın", emoji: "🍇" },
+  { name: "Balıkesir", emoji: "🧀" }, { name: "Bilecik", emoji: "🏺" }, { name: "Bingöl", emoji: "🍯" },
+  { name: "Bitlis", emoji: "🏰" }, { name: "Bolu", emoji: "🌲" }, { name: "Burdur", emoji: "🏺" },
+  { name: "Bursa", emoji: "🍑" }, { name: "Çanakkale", emoji: "🗿" }, { name: "Çankırı", emoji: "🧂" },
+  { name: "Çorum", emoji: "🥜" }, { name: "Denizli", emoji: "🐓" }, { name: "Diyarbakır", emoji: "🍉" },
+  { name: "Edirne", emoji: "🕌" }, { name: "Elazığ", emoji: "🍇" }, { name: "Erzincan", emoji: "🧀" },
+  { name: "Erzurum", emoji: "❄️" }, { name: "Eskişehir", emoji: "🎓" }, { name: "Gaziantep", emoji: "Baklava" }, // Uygun emojilerle güncellenebilir
+  { name: "Giresun", emoji: "🌰" }, { name: "Gümüşhane", emoji: "⛰️" }, { name: "Hakkari", emoji: "🏔️" },
+  { name: "Hatay", emoji: "🥘" }, { name: "Isparta", emoji: "🌹" }, { name: "Mersin", emoji: "🌴" },
+  { name: "İstanbul", emoji: "🕌" }, { name: "İzmir", emoji: "🌴" }, { name: "Kars", emoji: "🧀" },
+  { name: "Kastamonu", emoji: "🧄" }, { name: "Kayseri", emoji: "🥟" }, { name: "Kırklareli", emoji: "🍇" },
+  { name: "Kırşehir", emoji: "🎻" }, { name: "Kocaeli", emoji: "🏭" }, { name: "Konya", emoji: "🕌" },
+  { name: "Kütahya", emoji: "🏺" }, { name: "Malatya", emoji: "🍑" }, { name: "Manisa", emoji: "🍇" },
+  { name: "Kahramanmaraş", emoji: "🍦" }, { name: "Mardin", emoji: "🕌" }, { name: "Muğla", emoji: "🏖️" },
+  { name: "Muş", emoji: "🌷" }, { name: "Nevşehir", emoji: "🎈" }, { name: "Niğde", emoji: "🍎" },
+  { name: "Ordu", emoji: "🌰" }, { name: "Rize", emoji: "☕" }, { name: "Sakarya", emoji: "🎃" },
+  { name: "Samsun", emoji: "🗽" }, { name: "Siirt", emoji: "🥜" }, { name: "Sinop", emoji: "⚓" },
+  { name: "Sivas", emoji: "🏰" }, { name: "Tekirdağ", emoji: "🥩" }, { name: "Tokat", emoji: "🍇" },
+  { name: "Trabzon", emoji: "🐟" }, { name: "Tunceli", emoji: "⛰️" }, { name: "Şanlıurfa", emoji: "🌶️" },
+  { name: "Uşak", emoji: "🧵" }, { name: "Van", emoji: "🐈" }, { name: "Yozgat", emoji: "🌾" },
+  { name: "Zonguldak", emoji: "⛏️" }, { name: "Aksaray", emoji: "🏛️" }, { name: "Bayburt", emoji: "🏰" },
+  { name: "Karaman", emoji: "🐑" }, { name: "Kırıkkale", emoji: "🔧" }, { name: "Batman", emoji: "🛢️" },
+  { name: "Şırnak", emoji: "⛰️" }, { name: "Bartın", emoji: "🌲" }, { name: "Ardahan", emoji: "❄️" },
+  { name: "Iğdır", emoji: "🍏" }, { name: "Yalova", emoji: "🌸" }, { name: "Karabük", emoji: "🏗️" },
+  { name: "Kilis", emoji: "🍇" }, { name: "Osmaniye", emoji: "🥜" }, { name: "Düzce", emoji: "🌲" }
+].map(c => ({
+  ...c,
+  // Slug oluşturma fonksiyonu (Örn: "Kahramanmaraş" -> "kahramanmaras")
+  slug: c.name.toLowerCase()
+    .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+    .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+    .replace(/[^a-z0-9]/g, '-')
+}));
+
+// RestoranDB nesnesi içindeki getCities metodunu bununla revize edin:
+async getCities() {
+  // 1. Firebase'den mevcut şehirleri çekmeyi deneyin
+  const response = await fetch(`${FIREBASE_URL}/cities.json`);
+  const data = await response.json();
+  
+  // Eğer veritabanında şehirler listesi henüz hiç yoksa (ilk kurulum):
+  if (!data || Object.keys(data).length === 0) {
+    console.log("Şehir listesi boş, 81 il otomatik yükleniyor...");
+    
+    // Tüm şehirleri sırayla Firebase'e yazıyoruz
+    for (const city of TURKEY_CITIES) {
+      await fetch(`${FIREBASE_URL}/cities.json`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: city.name,
+          emoji: city.emoji,
+          slug: city.slug,
+          restaurantCount: 0
+        })
+      });
+    }
+    // Yükleme bittikten sonra tekrar çekiyoruz
+    const retryResponse = await fetch(`${FIREBASE_URL}/cities.json`);
+    const retryData = await retryResponse.json();
+    return Object.keys(retryData).map(key => ({ id: key, ...retryData[key] })).sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+  }
+
+  // Firebase'de şehirler varsa, objeyi diziye çevirip alfabetik sıralayarak döndürün
+  return Object.keys(data).map(key => ({
+    id: key,
+    ...data[key],
+    // Dinamik restoran sayısı hesabı varsa ekleyin, yoksa direkt veritabanındaki değeri döner:
+    restaurantCount: data[key].restaurantCount || 0 
+  })).sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+},
 
   async getCityBySlug(slug) {
     const cities = await this.getCities();
