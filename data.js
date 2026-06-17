@@ -85,7 +85,20 @@ const RestoranDB = {
       restaurantCount: data[key].restaurantCount || 0
     })).sort((a,b) => a.name.localeCompare(b.name, 'tr'));
   },
+  // data.js içerisine ekleyin
+async getRestaurants(cityId = null) {
+  const response = await fetch(`${FIREBASE_URL}/restaurants.json`);
+  const data = await response.json();
+  if (!data) return [];
   
+  let list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+  
+  // Eğer bir şehir seçildiyse filtrele
+  if (cityId) {
+    list = list.filter(r => r.cityId === cityId);
+  }
+  return list;
+},
   // ... Geri kalan fonksiyonlarınız aynı şekilde kalabilir ...
   
   async getCityBySlug(slug) {
