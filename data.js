@@ -195,27 +195,41 @@ const RestoranDB = {
   },
 
   // getCities metodu
+    // Güncellenmiş getCities metodu
   async getCities() {
     const response = await fetch(`${FIREBASE_URL}/cities.json`);
     const data = await response.json();
     
-    if (!data || Object.keys(data).length === 0) {
-      for (const city of TURKEY_CITIES) {
-        await fetch(`${FIREBASE_URL}/cities.json`, {
-          method: 'POST',
-          body: JSON.stringify({ name: city.name, emoji: city.emoji, slug: city.slug, restaurantCount: 0 })
-        });
-      }
-      const retryResponse = await fetch(`${FIREBASE_URL}/cities.json`);
-      const retryData = await retryResponse.json();
-      return Object.keys(retryData).map(key => ({ id: key, ...retryData[key] })).sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+    // Veri yoksa veya hatalıysa baştan oluştur
+    if (!data) {
+      const cityData = {};
+      // Şehirleri bir obje içinde topla
+      TURKEY_CITIES.forEach(city => {
+        cityData[city.slug] = { 
+          name: city.name, 
+          emoji: city.emoji, 
+          slug: city.slug, 
+          restaurantCount: 0 
+        };
+      });
+
+      // Tüm listeyi tek seferde veritabanına yaz (POST yerine PUT)
+      await fetch(`${FIREBASE_URL}/cities.json`, {
+        method: 'PUT',
+        body: JSON.stringify(cityData)
+      });
+      
+      return TURKEY_CITIES.sort((a,b) => a.name.localeCompare(b.name, 'tr'));
     }
 
+    // Veri varsa dönüştür
     return Object.keys(data).map(key => ({
-      id: key, ...data[key],
+      id: key, 
+      ...data[key],
       restaurantCount: data[key].restaurantCount || 0
     })).sort((a,b) => a.name.localeCompare(b.name, 'tr'));
   },
+
 
   async getCityBySlug(slug) {
     const cities = await this.getCities();
