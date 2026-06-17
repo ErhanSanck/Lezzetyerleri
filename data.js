@@ -29,46 +29,177 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// 81 İl Sabit Listesi (Nesne dışına çıkarıldı)
+// 81 İl Sabit Listesi - Koordinatlarla birlikte
 const TURKEY_CITIES = [
-  { name: "Adana", emoji: "🍊" }, { name: "Adıyaman", emoji: "⛰️" }, { name: "Afyonkarahisar", emoji: "🧆" },
-  { name: "Ağrı", emoji: "🏔️" }, { name: "Amasya", emoji: "🍏" }, { name: "Ankara", emoji: "🏛️" },
-  { name: "Antalya", emoji: "☀️" }, { name: "Artvin", emoji: "🌲" }, { name: "Aydın", emoji: "🍇" },
-  { name: "Balıkesir", emoji: "🧀" }, { name: "Bilecik", emoji: "🏺" }, { name: "Bingöl", emoji: "🍯" },
-  { name: "Bitlis", emoji: "🏰" }, { name: "Bolu", emoji: "🌲" }, { name: "Burdur", emoji: "🏺" },
-  { name: "Bursa", emoji: "🍑" }, { name: "Çanakkale", emoji: "🗿" }, { name: "Çankırı", emoji: "🧂" },
-  { name: "Çorum", emoji: "🥜" }, { name: "Denizli", emoji: "🐓" }, { name: "Diyarbakır", emoji: "🍉" },
-  { name: "Edirne", emoji: "🕌" }, { name: "Elazığ", emoji: "🍇" }, { name: "Erzincan", emoji: "🧀" },
-  { name: "Erzurum", emoji: "❄️" }, { name: "Eskişehir", emoji: "🎓" }, { name: "Gaziantep", emoji: "🥘" },
-  { name: "Giresun", emoji: "🌰" }, { name: "Gümüşhane", emoji: "⛰️" }, { name: "Hakkari", emoji: "🏔️" },
-  { name: "Hatay", emoji: "🥘" }, { name: "Isparta", emoji: "🌹" }, { name: "Mersin", emoji: "🌴" },
-  { name: "İstanbul", emoji: "🕌" }, { name: "İzmir", emoji: "🌴" }, { name: "Kars", emoji: "🧀" },
-  { name: "Kastamonu", emoji: "🧄" }, { name: "Kayseri", emoji: "🥟" }, { name: "Kırklareli", emoji: "🍇" },
-  { name: "Kırşehir", emoji: "🎻" }, { name: "Kocaeli", emoji: "🏭" }, { name: "Konya", emoji: "🕌" },
-  { name: "Kütahya", emoji: "🏺" }, { name: "Malatya", emoji: "🍑" }, { name: "Manisa", emoji: "🍇" },
-  { name: "Kahramanmaraş", emoji: "🍦" }, { name: "Mardin", emoji: "🕌" }, { name: "Muğla", emoji: "🏖️" },
-  { name: "Muş", emoji: "🌷" }, { name: "Nevşehir", emoji: "🎈" }, { name: "Niğde", emoji: "🍎" },
-  { name: "Ordu", emoji: "🌰" }, { name: "Rize", emoji: "☕" }, { name: "Sakarya", emoji: "🎃" },
-  { name: "Samsun", emoji: "🗽" }, { name: "Siirt", emoji: "🥜" }, { name: "Sinop", emoji: "⚓" },
-  { name: "Sivas", emoji: "🏰" }, { name: "Tekirdağ", emoji: "🥩" }, { name: "Tokat", emoji: "🍇" },
-  { name: "Trabzon", emoji: "🐟" }, { name: "Tunceli", emoji: "⛰️" }, { name: "Şanlıurfa", emoji: "🌶️" },
-  { name: "Uşak", emoji: "🧵" }, { name: "Van", emoji: "🐈" }, { name: "Yozgat", emoji: "🌾" },
-  { name: "Zonguldak", emoji: "⛏️" }, { name: "Aksaray", emoji: "🏛️" }, { name: "Bayburt", emoji: "🏰" },
-  { name: "Karaman", emoji: "🐑" }, { name: "Kırıkkale", emoji: "🔧" }, { name: "Batman", emoji: "🛢️" },
-  { name: "Şırnak", emoji: "⛰️" }, { name: "Bartın", emoji: "🌲" }, { name: "Ardahan", emoji: "❄️" },
-  { name: "Iğdır", emoji: "🍏" }, { name: "Yalova", emoji: "🌸" }, { name: "Karabük", emoji: "🏗️" },
-  { name: "Kilis", emoji: "🍇" }, { name: "Osmaniye", emoji: "🥜" }, { name: "Düzce", emoji: "🌲" }
+  { name: "Adana", emoji: "🍊", lat: 36.99, lng: 35.32 },
+  { name: "Adıyaman", emoji: "⛰️", lat: 37.76, lng: 38.27 },
+  { name: "Afyonkarahisar", emoji: "🧆", lat: 38.75, lng: 30.54 },
+  { name: "Ağrı", emoji: "🏔️", lat: 39.71, lng: 43.05 },
+  { name: "Amasya", emoji: "🍏", lat: 40.65, lng: 35.83 },
+  { name: "Ankara", emoji: "🏛️", lat: 39.93, lng: 32.86 },
+  { name: "Antalya", emoji: "☀️", lat: 36.90, lng: 30.71 },
+  { name: "Artvin", emoji: "🌲", lat: 41.18, lng: 41.82 },
+  { name: "Aydın", emoji: "🍇", lat: 37.84, lng: 27.84 },
+  { name: "Balıkesir", emoji: "🧀", lat: 39.64, lng: 27.88 },
+  { name: "Bilecik", emoji: "🏺", lat: 40.13, lng: 29.98 },
+  { name: "Bingöl", emoji: "🍯", lat: 39.13, lng: 40.50 },
+  { name: "Bitlis", emoji: "🏰", lat: 38.39, lng: 42.10 },
+  { name: "Bolu", emoji: "🌲", lat: 40.73, lng: 31.61 },
+  { name: "Burdur", emoji: "🏺", lat: 37.73, lng: 29.73 },
+  { name: "Bursa", emoji: "🍑", lat: 40.18, lng: 29.07 },
+  { name: "Çanakkale", emoji: "🗿", lat: 40.14, lng: 26.41 },
+  { name: "Çankırı", emoji: "🧂", lat: 40.59, lng: 33.63 },
+  { name: "Çorum", emoji: "🥜", lat: 40.56, lng: 34.95 },
+  { name: "Denizli", emoji: "🐓", lat: 37.77, lng: 29.21 },
+  { name: "Diyarbakır", emoji: "🍉", lat: 37.91, lng: 40.23 },
+  { name: "Edirne", emoji: "🕌", lat: 41.68, lng: 26.56 },
+  { name: "Elazığ", emoji: "🍇", lat: 38.68, lng: 39.22 },
+  { name: "Erzincan", emoji: "🧀", lat: 39.75, lng: 39.50 },
+  { name: "Erzurum", emoji: "❄️", lat: 39.90, lng: 41.27 },
+  { name: "Eskişehir", emoji: "🎓", lat: 39.77, lng: 30.52 },
+  { name: "Gaziantep", emoji: "🥘", lat: 37.07, lng: 37.38 },
+  { name: "Giresun", emoji: "🌰", lat: 40.91, lng: 38.64 },
+  { name: "Gümüşhane", emoji: "⛰️", lat: 40.46, lng: 39.46 },
+  { name: "Hakkari", emoji: "🏔️", lat: 37.57, lng: 43.74 },
+  { name: "Hatay", emoji: "🥘", lat: 36.40, lng: 36.16 },
+  { name: "Isparta", emoji: "🌹", lat: 37.77, lng: 30.55 },
+  { name: "Mersin", emoji: "🌴", lat: 36.78, lng: 34.63 },
+  { name: "İstanbul", emoji: "🕌", lat: 41.01, lng: 28.98 },
+  { name: "İzmir", emoji: "🌴", lat: 38.41, lng: 27.13 },
+  { name: "Kars", emoji: "🧀", lat: 40.60, lng: 43.10 },
+  { name: "Kastamonu", emoji: "🧄", lat: 41.39, lng: 33.77 },
+  { name: "Kayseri", emoji: "🥟", lat: 38.73, lng: 35.48 },
+  { name: "Kırklareli", emoji: "🍇", lat: 41.73, lng: 27.22 },
+  { name: "Kırşehir", emoji: "🎻", lat: 39.14, lng: 34.16 },
+  { name: "Kocaeli", emoji: "🏭", lat: 40.76, lng: 29.95 },
+  { name: "Konya", emoji: "🕌", lat: 37.87, lng: 32.48 },
+  { name: "Kütahya", emoji: "🏺", lat: 39.42, lng: 29.98 },
+  { name: "Malatya", emoji: "🍑", lat: 38.35, lng: 38.31 },
+  { name: "Manisa", emoji: "🍇", lat: 38.61, lng: 27.43 },
+  { name: "Kahramanmaraş", emoji: "🍦", lat: 37.58, lng: 36.93 },
+  { name: "Mardin", emoji: "🕌", lat: 37.31, lng: 40.74 },
+  { name: "Muğla", emoji: "🏖️", lat: 37.21, lng: 28.36 },
+  { name: "Muş", emoji: "🌷", lat: 38.74, lng: 41.50 },
+  { name: "Nevşehir", emoji: "🎈", lat: 38.62, lng: 34.72 },
+  { name: "Niğde", emoji: "🍎", lat: 37.96, lng: 34.67 },
+  { name: "Ordu", emoji: "🌰", lat: 41.00, lng: 37.27 },
+  { name: "Rize", emoji: "☕", lat: 41.20, lng: 40.50 },
+  { name: "Sakarya", emoji: "🎃", lat: 40.76, lng: 30.39 },
+  { name: "Samsun", emoji: "🗽", lat: 41.28, lng: 36.33 },
+  { name: "Siirt", emoji: "🥜", lat: 37.96, lng: 41.94 },
+  { name: "Sinop", emoji: "⚓", lat: 42.02, lng: 35.15 },
+  { name: "Sivas", emoji: "🏰", lat: 39.75, lng: 36.49 },
+  { name: "Tekirdağ", emoji: "🥩", lat: 40.98, lng: 27.51 },
+  { name: "Tokat", emoji: "🍇", lat: 40.31, lng: 36.55 },
+  { name: "Trabzon", emoji: "🐟", lat: 41.00, lng: 39.76 },
+  { name: "Tunceli", emoji: "⛰️", lat: 39.10, lng: 39.48 },
+  { name: "Şanlıurfa", emoji: "🌶️", lat: 37.15, lng: 38.79 },
+  { name: "Uşak", emoji: "🧵", lat: 38.68, lng: 29.40 },
+  { name: "Van", emoji: "🐈", lat: 38.48, lng: 43.38 },
+  { name: "Yozgat", emoji: "🌾", lat: 39.82, lng: 35.81 },
+  { name: "Zonguldak", emoji: "⛏️", lat: 41.45, lng: 31.79 },
+  { name: "Aksaray", emoji: "🏛️", lat: 38.36, lng: 34.03 },
+  { name: "Bayburt", emoji: "🏰", lat: 40.29, lng: 40.30 },
+  { name: "Karaman", emoji: "🐑", lat: 37.18, lng: 33.23 },
+  { name: "Kırıkkale", emoji: "🔧", lat: 39.84, lng: 33.51 },
+  { name: "Batman", emoji: "🛢️", lat: 37.88, lng: 41.54 },
+  { name: "Şırnak", emoji: "⛰️", lat: 37.52, lng: 42.48 },
+  { name: "Bartın", emoji: "🌲", lat: 41.63, lng: 32.34 },
+  { name: "Ardahan", emoji: "❄️", lat: 41.11, lng: 42.70 },
+  { name: "Iğdır", emoji: "🍏", lat: 39.92, lng: 44.05 },
+  { name: "Yalova", emoji: "🌸", lat: 40.65, lng: 29.27 },
+  { name: "Karabük", emoji: "🏗️", lat: 41.20, lng: 32.62 },
+  { name: "Kilis", emoji: "🍇", lat: 36.71, lng: 37.11 },
+  { name: "Osmaniye", emoji: "🥜", lat: 37.07, lng: 36.25 },
+  { name: "Düzce", emoji: "🌲", lat: 40.84, lng: 31.16 }
 ].map(c => ({ ...c, slug: slugify(c.name) }));
+
+// Harita koordinatları
+const CITY_COORDINATES = TURKEY_CITIES.reduce((acc, city) => {
+  acc[city.slug] = { lat: city.lat, lng: city.lng };
+  return acc;
+}, {});
+
+// Mesafe hesaplama (Haversine formülü)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Dünya'nın yarıçapı (km)
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// En yakın şehri bulma
+function findNearestCity(lat, lng) {
+  let nearest = null;
+  let minDistance = Infinity;
+
+  for (const [slug, coords] of Object.entries(CITY_COORDINATES)) {
+    const distance = calculateDistance(lat, lng, coords.lat, coords.lng);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = slug;
+    }
+  }
+
+  return nearest;
+}
 
 /* ----------------------- RestoranDB ----------------------- */
 const RestoranDB = {
-  // getCities metodu artık TURKEY_CITIES'i tanır
+  // Kullanıcının konumundan en yakın şehri bulma
+  async getDefaultCity() {
+    return new Promise((resolve) => {
+      // LocalStorage'dan kaydedilmiş şehir varsa onu kullan
+      const savedCity = localStorage.getItem('selectedCity');
+      if (savedCity) {
+        resolve(savedCity);
+        return;
+      }
+
+      // Geolocation API'yi kontrol et
+      if (!navigator.geolocation) {
+        console.log('Geolocation desteklenmiyor, varsayılan şehir: istanbul');
+        localStorage.setItem('selectedCity', 'istanbul');
+        resolve('istanbul');
+        return;
+      }
+
+      // Cihazın konumunu al
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const nearestCity = findNearestCity(lat, lng);
+          
+          console.log(`Konumunuz tespit edildi: Lat ${lat.toFixed(2)}, Lng ${lng.toFixed(2)}`);
+          console.log(`En yakın şehir: ${nearestCity}`);
+          
+          localStorage.setItem('selectedCity', nearestCity);
+          resolve(nearestCity);
+        },
+        (error) => {
+          console.log('Konum alınamadı:', error.message, '- Varsayılan: istanbul');
+          localStorage.setItem('selectedCity', 'istanbul');
+          resolve('istanbul');
+        },
+        {
+          timeout: 5000,
+          maximumAge: 300000 // 5 dakika önce alınan konum kullanılabilir
+        }
+      );
+    });
+  },
+
+  // getCities metodu
   async getCities() {
     const response = await fetch(`${FIREBASE_URL}/cities.json`);
     const data = await response.json();
     
     if (!data || Object.keys(data).length === 0) {
-      // Firebase'i temizlediyseniz burası çalışır ve 81 ili yazar
       for (const city of TURKEY_CITIES) {
         await fetch(`${FIREBASE_URL}/cities.json`, {
           method: 'POST',
