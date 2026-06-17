@@ -151,36 +151,49 @@ function findNearestCity(lat, lng) {
 /* ----------------------- RestoranDB ----------------------- */
 const RestoranDB = {
   // Kullanıcının konumundan en yakın şehri bulma
-  async getDefaultCity() {
+    async getDefaultCity() {
     return new Promise((resolve) => {
-      // LocalStorage'dan kaydedilmiş şehir varsa onu kullan
+      // 1. LocalStorage kontrolü
       const savedCity = localStorage.getItem('selectedCity');
       if (savedCity) {
         resolve(savedCity);
         return;
       }
 
-      // Geolocation API'yi kontrol et
+      // 2. Geolocation Desteği Kontrolü
       if (!navigator.geolocation) {
-        console.log('Geolocation desteklenmiyor, varsayılan şehir: istanbul');
+        console.warn('Geolocation desteklenmiyor, varsayılan: istanbul');
         localStorage.setItem('selectedCity', 'istanbul');
         resolve('istanbul');
         return;
       }
 
-      // Cihazın konumunu al
+      // 3. Konum İsteği
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           const nearestCity = findNearestCity(lat, lng);
           
-          console.log(`Konumunuz tespit edildi: Lat ${lat.toFixed(2)}, Lng ${lng.toFixed(2)}`);
-          console.log(`En yakın şehir: ${nearestCity}`);
-          
+          console.log(`Konum başarıyla alındı: ${nearestCity}`);
           localStorage.setItem('selectedCity', nearestCity);
           resolve(nearestCity);
         },
+        (error) => {
+          // Hata durumunda (kullanıcı reddetti, konum kapalı vb.)
+          console.error('Konum alınamadı (Hata Kodu: ' + error.code + '), varsayılan: istanbul');
+          localStorage.setItem('selectedCity', 'istanbul');
+          resolve('istanbul');
+        },
+        {
+          enableHighAccuracy: false, // Daha hızlı yanıt için false yapıldı
+          timeout: 7000,             // Süre 7 saniyeye çıkarıldı
+          maximumAge: 0              // Her zaman güncel konumu dene
+        }
+      );
+    });
+  },
+
         (error) => {
           console.log('Konum alınamadı:', error.message, '- Varsayılan: istanbul');
           localStorage.setItem('selectedCity', 'istanbul');
