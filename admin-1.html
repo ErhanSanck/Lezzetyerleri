@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Paneli — Lezzet Rehberi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0f0e0c; --surface:#1a1916; --surface2:#242220; --border:#2e2c29;
+    --accent:#e8622a; --accent2:#f5a623; --text:#f0ede8; --text2:#9c9790;
+    --text3:#5c5a56; --green:#4caf76; --red:#e85c5c; --radius:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{width:240px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .sidebar-logo{font-family:'Sora',sans-serif;font-weight:800;font-size:18px;color:var(--accent);padding:0 20px 24px;border-bottom:1px solid var(--border);}
+  .sidebar-logo span{color:var(--text);}
+  .sidebar-logo small{display:block;font-size:11px;color:var(--text3);font-weight:400;margin-top:2px;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text2);transition:all .15s;border-left:3px solid transparent;}
+  .nav-item:hover{color:var(--text);background:var(--surface2);}
+  .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(232,98,42,.08);}
+  .nav-icon{font-size:18px;}
+  .nav-group-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;padding:16px 20px 6px;}
+  .main{flex:1;padding:32px;overflow-x:hidden;}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-family:'Sora',sans-serif;font-size:26px;font-weight:800;}
+  .page-sub{color:var(--text2);font-size:14px;margin-top:4px;}
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:32px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .stat-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .stat-val{font-family:'Sora',sans-serif;font-size:28px;font-weight:800;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:760px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group.full{grid-column:1/-1;}
+  .form-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+  .form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+  .form-select option{background:var(--surface2);}
+  .form-textarea{min-height:90px;resize:vertical;}
+  .form-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:8px 0;}
+  .form-section-title{grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#d4541f;}
+  .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+  .btn-secondary:hover{color:var(--text);}
+  .btn-danger{background:rgba(232,92,92,.15);color:var(--red);border:1px solid rgba(232,92,92,.3);}
+  .btn-danger:hover{background:rgba(232,92,92,.25);}
+  .btn-sm{padding:7px 14px;font-size:13px;}
+  .menu-builder{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .menu-cat-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
+  .menu-items-list{margin-left:8px;}
+  .menu-item-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+  .menu-item-row .form-input{flex:1;}
+  .photo-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .photo-row .form-input{flex:1;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:14px;}
+  th{color:var(--text3);font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+  tr:hover td{background:var(--surface2);}
+  .td-name{font-weight:600;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(232,98,42,.15);color:var(--accent);}
+
+  /* ── KATEGORİ YÖNETİMİ ── */
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:28px;}
+  .cat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;transition:border-color .2s;}
+  .cat-card:hover{border-color:var(--accent);}
+  .cat-card-emoji{font-size:32px;width:52px;height:52px;background:var(--surface2);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .cat-card-info{flex:1;min-width:0;}
+  .cat-card-name{font-weight:700;font-size:15px;margin-bottom:3px;}
+  .cat-card-count{font-size:12px;color:var(--text3);}
+  .cat-card-actions{display:flex;gap:6px;flex-shrink:0;}
+  .add-cat-form{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:500px;margin-bottom:28px;}
+  .add-cat-form h3{font-family:'Sora',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;}
+  .add-cat-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+  .emoji-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:120px;overflow-y:auto;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;}
+  .emoji-opt{font-size:22px;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s;}
+  .emoji-opt:hover,.emoji-opt.selected{background:var(--accent);}
+  .inline-edit-row{display:flex;gap:8px;align-items:center;}
+  .inline-edit-row .form-input{flex:1;}
+
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{border-color:var(--green);color:var(--green);}
+  .toast.error{border-color:var(--red);color:var(--red);}
+  #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:380px;text-align:center;}
+  .login-box h2{font-family:'Sora',sans-serif;font-size:22px;margin-bottom:8px;}
+  .login-box p{color:var(--text2);font-size:14px;margin-bottom:28px;}
+  .login-error{color:var(--red);font-size:13px;margin-top:10px;}
+  .mobile-bottom-nav{
+    display:none;position:fixed;bottom:0;left:0;right:0;z-index:150;
+    background:var(--surface);border-top:1px solid var(--border);
+    padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));
+    flex-direction:row;justify-content:space-around;
+  }
+  .mob-nav-btn{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:none;border:none;color:var(--text2);
+    font-size:10px;font-family:'Inter',sans-serif;
+    cursor:pointer;padding:4px 12px;border-radius:8px;
+    transition:color .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  }
+  .mob-icon{font-size:22px;}
+  .mob-nav-btn.active{color:var(--accent);}
+  @media(max-width:768px){
+    .sidebar{display:none;}
+    .mobile-bottom-nav{display:flex;}
+    .main{padding:20px 16px calc(90px + env(safe-area-inset-bottom,0px));}
+    .form-card{padding:16px;}
+    .form-grid{grid-template-columns:1fr;gap:12px;}
+    .form-group.full,.form-divider,.form-section-title{grid-column:1;}
+    .page-header{margin-bottom:16px;}
+    .stats-row{grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+    .stat-card{padding:14px 10px;}
+    .stat-val{font-size:22px;}
+    .stat-label{font-size:10px;}
+    .page-title{font-size:20px;}
+    .table-wrap{-webkit-overflow-scrolling:touch;}
+    table{min-width:480px;}
+    .cat-grid{grid-template-columns:1fr;gap:10px;}
+    .add-cat-form{padding:14px;}
+    .add-cat-row{flex-direction:column;}
+    .login-box{padding:28px 18px;margin:16px;width:auto;}
+  }
+  @media(max-width:400px){
+    .stats-row{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:36px;margin-bottom:12px">🍽️</div>
+    <h2>Admin Girişi</h2>
+    <p>Lezzet Rehberi yönetim paneline giriş yapın</p>
+    <div class="form-group" style="text-align:left;margin-bottom:14px">
+      <label class="form-label">E-posta</label>
+      <input class="form-input" type="email" id="login-email" placeholder="admin@example.com">
+    </div>
+    <div class="form-group" style="text-align:left;margin-bottom:20px">
+      <label class="form-label">Şifre</label>
+      <input class="form-input" type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Giriş Yap</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div class="layout" id="admin-layout" style="display:none">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Lezzet<span>Admin</span><small>Yönetim Paneli</small></div>
+    <nav style="margin-top:12px;flex:1">
+      <div class="nav-group-title">Genel</div>
+      <div class="nav-item active" onclick="goPanel('dashboard',this)">
+        <span class="nav-icon">📊</span><span>Dashboard</span>
+      </div>
+      <div class="nav-group-title">Restoranlar</div>
+      <div class="nav-item" onclick="goPanel('add',this)">
+        <span class="nav-icon">➕</span><span>Restoran Ekle</span>
+      </div>
+      <div class="nav-item" onclick="goPanel('list',this)">
+        <span class="nav-icon">🗂️</span><span>Tüm Restoranlar</span>
+      </div>
+      <div class="nav-group-title">Ayarlar</div>
+      <div class="nav-item" onclick="goPanel('categories',this)">
+        <span class="nav-icon">🏷️</span><span>Kategoriler</span>
+      </div>
+    </nav>
+    <div style="padding:16px 20px;border-top:1px solid var(--border)">
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()" style="width:100%;justify-content:center">
+        🚪 <span>Çıkış</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MOBİL BOTTOM NAV -->
+  <nav class="mobile-bottom-nav" id="mob-nav">
+    <button class="mob-nav-btn active" id="mobnav-dashboard" onclick="goPanel('dashboard',this,true)">
+      <span class="mob-icon">📊</span>Dashboard
+    </button>
+    <button class="mob-nav-btn" id="mobnav-add" onclick="goPanel('add',this,true)">
+      <span class="mob-icon">➕</span>Ekle
+    </button>
+    <button class="mob-nav-btn" id="mobnav-list" onclick="goPanel('list',this,true)">
+      <span class="mob-icon">🗂️</span>Liste
+    </button>
+    <button class="mob-nav-btn" id="mobnav-categories" onclick="goPanel('categories',this,true)">
+      <span class="mob-icon">🏷️</span>Kategoriler
+    </button>
+  </nav>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Genel bakış</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Restoran</div>
+          <div class="stat-val" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Şehir Sayısı</div>
+          <div class="stat-val" id="stat-cities">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Kategori Sayısı</div>
+          <div class="stat-val" id="stat-cats">—</div>
+        </div>
+      </div>
+      <div class="page-header" style="margin-top:8px">
+        <div class="page-title" style="font-size:18px">Son Eklenenler</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>İsim</th><th>Şehir</th><th>Kategori</th><th>Puan</th></tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD / EDIT -->
+    <div class="panel" id="panel-add">
+      <div class="page-header">
+        <div class="page-title" id="form-panel-title">Restoran Ekle</div>
+        <div class="page-sub">Yeni bir restoran veya yemek yeri ekleyin</div>
+      </div>
+      <div class="form-card">
+        <input type="hidden" id="edit-id">
+        <div class="form-grid">
+          <div class="form-section-title">Temel Bilgiler</div>
+          <hr class="form-divider">
+          <div class="form-group">
+            <label class="form-label">Restoran Adı *</label>
+            <input class="form-input" id="f-name" placeholder="örn. Asil Köfte">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kategori *</label>
+            <select class="form-select" id="f-category">
+              <option value="">Seçin...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Şehir *</label>
+            <select class="form-select" id="f-city">
+              <option value="">Seçin...</option>
+              <option>İstanbul</option><option>Ankara</option><option>İzmir</option>
+              <option>Bursa</option><option>Antalya</option><option>Adana</option>
+              <option>Konya</option><option>Gaziantep</option><option>Mersin</option>
+              <option>Diyarbakır</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefon</label>
+            <input class="form-input" id="f-phone" placeholder="0224 000 00 00">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Adres</label>
+            <input class="form-input" id="f-address" placeholder="Mahalle, Cadde, No, İlçe">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Açıklama</label>
+            <textarea class="form-textarea" id="f-description" placeholder="Kısa tanıtım yazısı..."></textarea>
+          </div>
+          <div class="form-section-title" style="margin-top:8px">Ek Bilgiler</div>
+          <hr class="form-divider">
+          <div class="form-group">
+            <label class="form-label">Çalışma Saatleri</label>
+            <input class="form-input" id="f-hours" placeholder="08:00-22:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Puan (1-5)</label>
+            <input class="form-input" id="f-rating" type="number" min="1" max="5" step="0.1" placeholder="4.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Enlem (lat)</label>
+            <input class="form-input" id="f-lat" placeholder="40.1885">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Boylam (lng)</label>
+            <input class="form-input" id="f-lng" placeholder="29.0610">
+          </div>
+          <div class="form-section-title" style="margin-top:8px">Fotoğraf URL'leri</div>
+          <hr class="form-divider">
+          <div class="form-group full">
+            <div id="photos-container">
+              <div class="photo-row">
+                <input class="form-input" placeholder="https://...jpg" name="photo">
+                <button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addPhotoRow()">+ Fotoğraf Ekle</button>
+          </div>
+          <div class="form-section-title" style="margin-top:8px">Menü</div>
+          <hr class="form-divider">
+          <div class="form-group full">
+            <div id="menu-container"></div>
+            <button class="btn btn-secondary btn-sm" onclick="addMenuCategory()">+ Menü Kategorisi Ekle</button>
+          </div>
+          <div class="form-group full" style="display:flex;gap:12px;margin-top:8px">
+            <button class="btn btn-primary" onclick="submitForm()">💾 Kaydet</button>
+            <button class="btn btn-secondary" onclick="clearForm()">✕ Temizle</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div class="panel" id="panel-list">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="page-title">Restoranlar</div>
+          <div class="page-sub">Tüm kayıtlar</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="form-select" id="filter-city" onchange="filterList()" style="padding:8px 12px;font-size:13px">
+            <option value="">Tüm Şehirler</option>
+            <option>İstanbul</option><option>Ankara</option><option>İzmir</option>
+            <option>Bursa</option><option>Antalya</option><option>Adana</option>
+            <option>Konya</option><option>Gaziantep</option><option>Mersin</option><option>Diyarbakır</option>
+          </select>
+          <select class="form-select" id="filter-cat" onchange="filterList()" style="padding:8px 12px;font-size:13px">
+            <option value="">Tüm Kategoriler</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>İsim</th><th>Şehir</th><th>Kategori</th><th>Telefon</th><th>Puan</th><th>İşlem</th></tr></thead>
+          <tbody id="list-tbody"></tbody>
+        </table>
+        <div class="stat-label" id="list-empty" style="padding:32px;text-align:center;display:none">Kayıt yok.</div>
+      </div>
+    </div>
+
+    <!-- KATEGORİLER -->
+    <div class="panel" id="panel-categories">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="page-title">Kategoriler</div>
+          <div class="page-sub">Ana sitedeki kategori listesini buradan yönetin</div>
+        </div>
+      </div>
+
+      <!-- YENİ KATEGORİ FORMU -->
+      <div class="add-cat-form">
+        <h3 id="cat-form-title">➕ Yeni Kategori Ekle</h3>
+        <input type="hidden" id="cat-edit-key">
+        <div class="add-cat-row">
+          <div class="form-group" style="flex:1;min-width:160px">
+            <label class="form-label">Kategori Adı *</label>
+            <input class="form-input" id="cat-name" placeholder="örn. Tantunici">
+          </div>
+          <div class="form-group" style="width:90px">
+            <label class="form-label">Emoji *</label>
+            <input class="form-input" id="cat-emoji" placeholder="🍽️" style="font-size:20px;text-align:center" maxlength="4" readonly>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px">
+            <button class="btn btn-primary" onclick="saveCat()">💾 Kaydet</button>
+            <button class="btn btn-secondary" onclick="cancelCatEdit()">✕</button>
+          </div>
+        </div>
+        <!-- Emoji seçici -->
+        <div style="margin-top:12px">
+          <div class="form-label" style="margin-bottom:6px">Emoji Seç</div>
+          <div class="emoji-picker" id="emoji-picker"></div>
+        </div>
+      </div>
+
+      <!-- KATEGORİ LİSTESİ -->
+      <div class="cat-grid" id="cat-grid">
+        <div style="color:var(--text3);font-size:14px;padding:12px">Yükleniyor...</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getDatabase, ref, set, push, remove, onValue }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHeie0D4Rr5PfP_HtTt-SE9W_QCE_fKo0",
+  authDomain: "yemek-63572.firebaseapp.com",
+  databaseURL: "https://yemek-63572-default-rtdb.firebaseio.com",
+  projectId: "yemek-63572",
+  storageBucket: "yemek-63572.firebasestorage.app",
+  messagingSenderId: "674967323369",
+  appId: "1:674967323369:web:81be0f511873434a55a678"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let allData = {};
+let allCategories = {}; // { key: {name, emoji, order} }
+
+// ── DEFAULT KATEGORİLER (ilk kez) ──
+const DEFAULT_CATS = [
+  {name:'Köfteci',emoji:'🥩'},{name:'Dönerci',emoji:'🌯'},{name:'Tatlıcı',emoji:'🍮'},
+  {name:'Pideci',emoji:'🫓'},{name:'Kebapçı',emoji:'🔥'},{name:'Balıkçı',emoji:'🐟'},
+  {name:'Çorbacı',emoji:'🍲'},{name:'Pastane',emoji:'🎂'},{name:'Lahmacuncu',emoji:'🫓'},
+  {name:'Kahvaltıcı',emoji:'🍳'},{name:'Cafe',emoji:'☕'},{name:'Restoran',emoji:'🍽️'}
+];
+
+// ── EMOJI LİSTESİ ──
+const EMOJIS = ['🍽️','🥩','🌯','🍮','🫓','🔥','🐟','🍲','🎂','🍳','☕','🍕','🍔','🌮',
+  '🥗','🍜','🍣','🥘','🍱','🧆','🥙','🫕','🍛','🥞','🧇','🍩','🧁','🍰','🥐',
+  '🍦','🍧','🧃','🥤','🫖','🍵','🫙','🥚','🧄','🫑','🥬','🌽','🍅'];
+
+// ── AUTH ──
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  document.getElementById('login-error').textContent = '';
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { document.getElementById('login-error').textContent = 'Giriş başarısız: '+(e.message||e.code); }
+};
+window.doLogout = async function() { await signOut(auth); };
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-layout').style.display = 'flex';
+    loadData();
+    loadCategories();
+    buildEmojiPicker();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-layout').style.display = 'none';
+  }
+});
+
+// ── LOAD DATA ──
+function loadData() {
+  onValue(ref(db,'restaurants'), snap => {
+    allData = snap.val() || {};
+    renderDashboard();
+    renderList();
+  });
+}
+
+// ── LOAD KATEGORİLER ──
+function loadCategories() {
+  onValue(ref(db,'categories'), async snap => {
+    const data = snap.val();
+    if (!data) {
+      // İlk kurulum: varsayılan kategorileri yaz
+      const obj = {};
+      DEFAULT_CATS.forEach((c,i) => { obj['cat_'+i] = {...c, order:i}; });
+      await set(ref(db,'categories'), obj);
+      return;
+    }
+    allCategories = data;
+    renderCategoryGrid();
+    populateCategorySelects();
+  });
+}
+
+function renderCategoryGrid() {
+  const grid = document.getElementById('cat-grid');
+  const cats = Object.entries(allCategories).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  if (cats.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:14px">Henüz kategori yok.</div>';
+    return;
+  }
+  // Restoran sayısını say
+  const countMap = {};
+  Object.values(allData).forEach(r => {
+    if (r.category) countMap[r.category] = (countMap[r.category]||0)+1;
+  });
+
+  grid.innerHTML = cats.map(([key,c]) => `
+    <div class="cat-card" id="catcard-${key}">
+      <div class="cat-card-emoji">${c.emoji||'🍽️'}</div>
+      <div class="cat-card-info">
+        <div class="cat-card-name" id="catname-${key}">${c.name}</div>
+        <div class="cat-card-count">${countMap[c.name]||0} restoran</div>
+      </div>
+      <div class="cat-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editCat('${key}')" title="Düzenle">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCat('${key}','${(c.name||'').replace(/'/g,"\\'")}')" title="Sil">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function populateCategorySelects() {
+  const cats = Object.values(allCategories).sort((a,b)=>(a.order||0)-(b.order||0));
+  const opts = cats.map(c=>`<option value="${c.name}">${c.emoji||''} ${c.name}</option>`).join('');
+
+  // Restoran formu
+  const fCat = document.getElementById('f-category');
+  const prev = fCat.value;
+  fCat.innerHTML = '<option value="">Seçin...</option>' + opts;
+  if (prev) fCat.value = prev;
+
+  // Liste filtresi
+  const filt = document.getElementById('filter-cat');
+  const prev2 = filt.value;
+  filt.innerHTML = '<option value="">Tüm Kategoriler</option>' + opts;
+  if (prev2) filt.value = prev2;
+}
+
+// ── EMOJİ PİCKER ──
+function buildEmojiPicker() {
+  const picker = document.getElementById('emoji-picker');
+  picker.innerHTML = EMOJIS.map(e =>
+    `<span class="emoji-opt" onclick="selectEmoji('${e}')">${e}</span>`
+  ).join('');
+}
+
+window.selectEmoji = function(e) {
+  document.getElementById('cat-emoji').value = e;
+  document.querySelectorAll('.emoji-opt').forEach(el => el.classList.remove('selected'));
+  event.target.classList.add('selected');
+};
+
+// ── KATEGORİ KAYDET ──
+window.saveCat = async function() {
+  const name  = document.getElementById('cat-name').value.trim();
+  const emoji = document.getElementById('cat-emoji').value.trim() || '🍽️';
+  const key   = document.getElementById('cat-edit-key').value;
+
+  if (!name) { showToast('Kategori adı boş olamaz.','error'); return; }
+
+  // Aynı isim kontrolü (düzenlemede kendi anahtarı hariç)
+  const duplicate = Object.entries(allCategories).some(([k,c]) => c.name === name && k !== key);
+  if (duplicate) { showToast('Bu isimde kategori zaten var.','error'); return; }
+
+  try {
+    if (key) {
+      // Güncelle
+      await set(ref(db,'categories/'+key), {
+        ...allCategories[key], name, emoji
+      });
+      // Bu kategorideki restoranları da güncelle
+      const oldName = allCategories[key].name;
+      if (oldName !== name) {
+        const updates = {};
+        Object.entries(allData).forEach(([id,r]) => {
+          if (r.category === oldName) updates[id+'/category'] = name;
+        });
+        for (const [path, val] of Object.entries(updates)) {
+          await set(ref(db,'restaurants/'+path), val);
+        }
+      }
+      showToast('Kategori güncellendi ✓','success');
+    } else {
+      // Yeni ekle
+      const order = Object.keys(allCategories).length;
+      await push(ref(db,'categories'), { name, emoji, order });
+      showToast('Kategori eklendi ✓','success');
+    }
+    cancelCatEdit();
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+window.editCat = function(key) {
+  const c = allCategories[key]; if (!c) return;
+  document.getElementById('cat-edit-key').value = key;
+  document.getElementById('cat-name').value = c.name;
+  document.getElementById('cat-emoji').value = c.emoji || '🍽️';
+  document.getElementById('cat-form-title').textContent = '✏️ Kategori Düzenle';
+  // Emoji picker seçimi
+  document.querySelectorAll('.emoji-opt').forEach(el => {
+    el.classList.toggle('selected', el.textContent === c.emoji);
+  });
+  document.getElementById('cat-name').focus();
+  window.scrollTo(0,0);
+};
+
+window.cancelCatEdit = function() {
+  document.getElementById('cat-edit-key').value = '';
+  document.getElementById('cat-name').value = '';
+  document.getElementById('cat-emoji').value = '';
+  document.getElementById('cat-form-title').textContent = '➕ Yeni Kategori Ekle';
+  document.querySelectorAll('.emoji-opt').forEach(el => el.classList.remove('selected'));
+};
+
+window.deleteCat = async function(key, name) {
+  const count = Object.values(allData).filter(r => r.category === name).length;
+  const msg = count > 0
+    ? `"${name}" kategorisinde ${count} restoran var. Silerseniz bu restoranların kategorisi boş kalır. Emin misiniz?`
+    : `"${name}" kategorisi silinecek. Emin misiniz?`;
+  if (!confirm(msg)) return;
+  try {
+    await remove(ref(db,'categories/'+key));
+    showToast('Kategori silindi ✓','success');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const items = Object.values(allData);
+  document.getElementById('stat-total').textContent = items.length;
+  document.getElementById('stat-cities').textContent = new Set(items.map(r=>r.city)).size;
+  document.getElementById('stat-cats').textContent = Object.keys(allCategories).length || new Set(items.map(r=>r.category)).size;
+  const tbody = document.getElementById('recent-tbody');
+  const recent = Object.entries(allData).slice(-8).reverse();
+  tbody.innerHTML = recent.map(([,r]) => `
+    <tr>
+      <td class="td-name">${r.name||'—'}</td>
+      <td>${r.city||'—'}</td>
+      <td><span class="badge">${r.category||'—'}</span></td>
+      <td>${r.rating?'⭐ '+r.rating:'—'}</td>
+    </tr>`).join('');
+}
+
+// ── LIST ──
+function renderList(cityF='', catF='') {
+  const tbody = document.getElementById('list-tbody');
+  const empty = document.getElementById('list-empty');
+  let entries = Object.entries(allData);
+  if (cityF) entries = entries.filter(([,r])=>r.city===cityF);
+  if (catF)  entries = entries.filter(([,r])=>r.category===catF);
+  if (entries.length===0){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML = entries.map(([id,r])=>`
+    <tr>
+      <td class="td-name">${r.name||'—'}</td>
+      <td>${r.city||'—'}</td>
+      <td><span class="badge">${r.category||'—'}</span></td>
+      <td>${r.phone||'—'}</td>
+      <td>${r.rating?'⭐ '+r.rating:'—'}</td>
+      <td style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="editItem('${id}')">✏️ Düzenle</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteItem('${id}','${(r.name||'').replace(/'/g,"\\'")}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+window.filterList = function(){
+  renderList(document.getElementById('filter-city').value, document.getElementById('filter-cat').value);
+};
+
+// ── RESTORAN FORM ──
+window.submitForm = async function() {
+  const id       = document.getElementById('edit-id').value;
+  const name     = document.getElementById('f-name').value.trim();
+  const category = document.getElementById('f-category').value;
+  const city     = document.getElementById('f-city').value;
+  if (!name||!category||!city){showToast('Zorunlu alanları doldurun.','error');return;}
+  const photoInputs = document.querySelectorAll('#photos-container input[name="photo"]');
+  const photos={};let pi=0;
+  photoInputs.forEach(inp=>{if(inp.value.trim())photos['p'+(pi++)]=inp.value.trim();});
+  const menuData={};
+  document.querySelectorAll('.menu-cat-block').forEach(block=>{
+    const catName=block.querySelector('.menu-cat-name').value.trim();
+    if(!catName)return;
+    menuData[catName]={};let mi=0;
+    block.querySelectorAll('.menu-item-row').forEach(row=>{
+      const n=row.querySelector('.mi-name').value.trim();
+      const p=row.querySelector('.mi-price').value.trim();
+      if(n)menuData[catName]['item'+(mi++)]={name:n,price:p};
+    });
+  });
+  const payload={
+    name,category,city,
+    phone:document.getElementById('f-phone').value.trim(),
+    address:document.getElementById('f-address').value.trim(),
+    description:document.getElementById('f-description').value.trim(),
+    hours:document.getElementById('f-hours').value.trim(),
+    rating:document.getElementById('f-rating').value||null,
+    lat:document.getElementById('f-lat').value||null,
+    lng:document.getElementById('f-lng').value||null,
+    photos:Object.keys(photos).length?photos:null,
+    menu:Object.keys(menuData).length?menuData:null,
+    updatedAt:new Date().toISOString()
+  };
+  Object.keys(payload).forEach(k=>payload[k]===null&&delete payload[k]);
+  try {
+    if(id){await set(ref(db,'restaurants/'+id),payload);showToast('Güncellendi ✓','success');}
+    else{await push(ref(db,'restaurants'),payload);showToast('Eklendi ✓','success');}
+    clearForm();
+    goPanel('list',document.querySelectorAll('.nav-item')[3]);
+  }catch(e){showToast('Hata: '+e.message,'error');}
+};
+
+window.clearForm=function(){
+  ['f-name','f-phone','f-address','f-description','f-hours','f-rating','f-lat','f-lng'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-category').value='';
+  document.getElementById('f-city').value='';
+  document.getElementById('edit-id').value='';
+  document.getElementById('photos-container').innerHTML=`<div class="photo-row"><input class="form-input" placeholder="https://...jpg" name="photo"><button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></div>`;
+  document.getElementById('menu-container').innerHTML='';
+  document.getElementById('form-panel-title').textContent='Restoran Ekle';
+};
+
+window.editItem=function(id){
+  const r=allData[id];if(!r)return;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('f-name').value=r.name||'';
+  document.getElementById('f-category').value=r.category||'';
+  document.getElementById('f-city').value=r.city||'';
+  document.getElementById('f-phone').value=r.phone||'';
+  document.getElementById('f-address').value=r.address||'';
+  document.getElementById('f-description').value=r.description||'';
+  document.getElementById('f-hours').value=r.hours||'';
+  document.getElementById('f-rating').value=r.rating||'';
+  document.getElementById('f-lat').value=r.lat||'';
+  document.getElementById('f-lng').value=r.lng||'';
+  const pc=document.getElementById('photos-container');pc.innerHTML='';
+  const photos=r.photos?Object.values(r.photos):[''];
+  photos.forEach(url=>{
+    const div=document.createElement('div');div.className='photo-row';
+    div.innerHTML=`<input class="form-input" placeholder="https://...jpg" name="photo" value="${url}"><button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>`;
+    pc.appendChild(div);
+  });
+  const mc=document.getElementById('menu-container');mc.innerHTML='';
+  if(r.menu)Object.entries(r.menu).forEach(([cn,items])=>addMenuCategory(cn,Object.values(items)));
+  document.getElementById('form-panel-title').textContent='Restoran Düzenle';
+  goPanel('add',document.querySelectorAll('.nav-item')[2]);
+  window.scrollTo(0,0);
+};
+
+window.deleteItem=async function(id,name){
+  if(!confirm(`"${name}" silinecek. Emin misiniz?`))return;
+  try{await remove(ref(db,'restaurants/'+id));showToast('Silindi ✓','success');}
+  catch(e){showToast('Hata: '+e.message,'error');}
+};
+
+// ── MENU BUILDER ──
+window.addMenuCategory=function(catName='',items=[]){
+  const mc=document.getElementById('menu-container');
+  const div=document.createElement('div');div.className='menu-cat-block menu-builder';div.style.marginBottom='12px';
+  div.innerHTML=`<div class="menu-cat-row"><input class="form-input menu-cat-name" placeholder="Kategori (örn. Ana Yemekler)" value="${catName}" style="flex:1"><button class="btn btn-danger btn-sm" onclick="removeRow(this.parentElement.parentElement)">✕ Kaldır</button></div><div class="menu-items-list"></div><button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addMenuItem(this)">+ Ürün Ekle</button>`;
+  mc.appendChild(div);
+  const list=div.querySelector('.menu-items-list');
+  if(items.length)items.forEach(item=>addMenuItemToList(list,item.name||'',item.price||''));
+  else addMenuItemToList(list);
+};
+function addMenuItemToList(list,name='',price=''){
+  const div=document.createElement('div');div.className='menu-item-row';
+  div.innerHTML=`<input class="form-input mi-name" placeholder="Ürün adı" value="${name}"><input class="form-input mi-price" placeholder="Fiyat (₺)" value="${price}" style="max-width:120px"><button class="btn btn-danger btn-sm" onclick="removeRow(this.parentElement)">✕</button>`;
+  list.appendChild(div);
+}
+window.addMenuItem=function(btn){addMenuItemToList(btn.previousElementSibling);};
+window.addPhotoRow=function(){
+  const pc=document.getElementById('photos-container');
+  const div=document.createElement('div');div.className='photo-row';
+  div.innerHTML=`<input class="form-input" placeholder="https://...jpg" name="photo"><button class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>`;
+  pc.appendChild(div);
+};
+window.removeRow=function(el){el.remove();};
+
+// ── NAV ──
+window.goPanel=function(name,el,fromMob){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.mob-nav-btn').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // Sync sidebar + mob nav
+  const sideMap={'dashboard':0,'add':1,'list':2,'categories':3};
+  const navItems=document.querySelectorAll('.nav-item');
+  if(navItems[sideMap[name]])navItems[sideMap[name]].classList.add('active');
+  const mobBtn=document.getElementById('mobnav-'+name);
+  if(mobBtn)mobBtn.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(fromMob) window.scrollTo({top:0,behavior:'smooth'});
+};
+
+// ── TOAST ──
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type+' show';
+  setTimeout(()=>t.className='toast',3000);
+}
+</script>
+</body>
+</html>
